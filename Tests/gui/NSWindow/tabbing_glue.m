@@ -1,4 +1,4 @@
-/* glue.m: the tabbing API on real NSWindows: installing, automatic
+/* tabbing_glue.m: the tabbing API on real NSWindows: installing, automatic
    tabbing, the Windows menu's path (ordering a hidden tab in), titles,
    the reserved row, toggling the bar, closing, Disallowed and panels,
    merging, moving a tab out, validation, and the bar's mouse handling.

@@ -1,4 +1,4 @@
-/* hover.m: the bar follows the pointer: moved onto a tab, that tab is
+/* tabbing_hover.m: the bar follows the pointer: moved onto a tab, that tab is
    hovered (GNUstep gives the entered event in the view's coordinates);
    moved to the next tab, that one is; the tab after a selected or hovered
    tab says so in its state. Warps the pointer, so it needs a private

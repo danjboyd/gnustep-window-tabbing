@@ -13,9 +13,9 @@
 #import "Testing.h"
 #import "FakeWindow.h"
 /* The model itself, compiled into the test: it needs no NSWindow. */
-#import "../../Source/NSWindowTabGroup.m"
-#import "../../Source/NSWindowTab.m"
-#import "../../Source/GSWindowTabBarLayout.m"
+#import "../../../Source/NSWindowTabGroup.m"
+#import "../../../Source/NSWindowTab.m"
+#import "../../../Source/GSWindowTabBarLayout.m"
 
 static NSArray *
 names (NSArray *windows)

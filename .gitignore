@@ -3,11 +3,11 @@ obj/
 derived_src/
 Tests/tests.log
 Tests/tests.sum
-Tests/*/obj/
+Tests/gui/*/obj/
 Examples/*/obj/
 Examples/*/*.app/
 *.app/
-Tests/*/GNUmakefile
+Tests/gui/*/GNUmakefile
 Tests/oldtests.*
 *.o
 Examples/TabDemo/Source/

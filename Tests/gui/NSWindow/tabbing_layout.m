@@ -1,4 +1,4 @@
-/* layout.m: the bar's layout with a theme's margin and spacing: tabs
+/* tabbing_layout.m: the bar's layout with a theme's margin and spacing: tabs
    start after the margin, are spaced apart, and the "+" button ends a
    margin before the bar's end, a spacing after the last tab. Needs a
    display (a private Xvfb, no window manager needed); skips without one.

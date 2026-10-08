@@ -1,4 +1,4 @@
-/* running.m: tabbing in a running app. The tab shortcuts reach the
+/* tabbing_running.m: tabbing in a running app. The tab shortcuts reach the
    group while a text view that takes Ctrl key equivalents has focus, and
    closing the selected tab doesn't count as closing the last window (so
    an app whose delegate says to terminate after the last window doesn't

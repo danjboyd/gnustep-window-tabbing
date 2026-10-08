@@ -24,9 +24,13 @@ tabdemo: all
 
 # The model, with no display.
 check-model: all
-	cd Tests && gnustep-tests model
+	cd Tests && gnustep-tests gui/NSWindowTabGroup
 
 # The NSWindow glue: needs a display (a private Xvfb; DISPLAY must be set,
 # and no window manager is needed). Runs with empty user defaults.
 check-display: all
-	cd Tests && LD_LIBRARY_PATH=$(CURDIR)/obj:$$LD_LIBRARY_PATH gnustep-tests display
+	cd Tests && LD_LIBRARY_PATH=$(CURDIR)/obj:$$LD_LIBRARY_PATH \
+	  gnustep-tests gui/NSWindow
+
+# Both, as libs-gui's own "make check" runs Tests/gui.
+check:: check-model check-display
