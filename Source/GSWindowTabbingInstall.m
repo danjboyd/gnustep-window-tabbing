@@ -36,11 +36,17 @@
    each wrapper is one call inside the method itself, and this file is
    deleted. */
 
-/* dladdr() */
+/* Which loaded object holds an address: dladdr() where there is one,
+   GetModuleHandleExW() on Windows, whose MinGW toolchains have no
+   <dlfcn.h>. */
+#if defined(_WIN32)
+#include <windows.h>
+#else
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
 #endif
 #include <dlfcn.h>
+#endif
 #include <stdlib.h>
 
 #import "GSWindowTabbingPrivate.h"
@@ -111,6 +117,32 @@ GSWindowTabbingForgetWindow(NSWindow *window)
     }
 }
 
+/* The base address of the loaded object (shared library, bundle or
+   executable) that holds address, or NULL when it can't be told. */
+static const void *
+GSWindowTabbingObjectBase(const void *address)
+{
+#if defined(_WIN32)
+  HMODULE module = NULL;
+
+  if (GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS
+                         | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+                         (LPCWSTR)address, &module) == 0)
+    {
+      return NULL;
+    }
+  return (const void *)module;
+#else
+  Dl_info info;
+
+  if (dladdr((void *)address, &info) == 0)
+    {
+      return NULL;
+    }
+  return info.dli_fbase;
+#endif
+}
+
 /* Is this copy of the code the one whose classes the runtime kept (see
    +[GSWindowTabbingState _installTabbing])?  The kept class's method
    lives in the same loaded object as this function only then. */
@@ -122,18 +154,22 @@ GSWindowTabbingClassesAreOurs(void)
   if (ours < 0)
     {
       Method method;
-      Dl_info classes;
-      Dl_info functions;
+      const void *classes;
+      const void *functions;
 
       method = class_getClassMethod([GSWindowTabbingState class],
                                     @selector(_installTabbing));
       ours = 1;
-      if (method != NULL
-        && dladdr((void *)method_getImplementation(method), &classes) != 0
-        && dladdr((void *)GSWindowTabbingClassesAreOurs, &functions) != 0
-        && classes.dli_fbase != functions.dli_fbase)
+      if (method != NULL)
         {
-          ours = 0;
+          classes = GSWindowTabbingObjectBase
+            ((const void *)method_getImplementation(method));
+          functions = GSWindowTabbingObjectBase
+            ((const void *)GSWindowTabbingClassesAreOurs);
+          if (classes != NULL && functions != NULL && classes != functions)
+            {
+              ours = 0;
+            }
         }
     }
   return ours == 1;

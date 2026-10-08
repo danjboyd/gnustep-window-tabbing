@@ -1,5 +1,12 @@
 2026-10-08  Daniel Boyd  <danieljboyd@icloud.com>
 
+	* Source/GSWindowTabbingInstall.m (GSWindowTabbingObjectBase): New,
+	which loaded object holds an address: dladdr() or, on Windows,
+	GetModuleHandleExW(), as MinGW has no <dlfcn.h>.
+	(GSWindowTabbingClassesAreOurs): Use it.
+
+2026-10-08  Daniel Boyd  <danieljboyd@icloud.com>
+
 	Window tabbing: dragging tabs and scrolling the bar, as libadwaita's
 	AdwTabBar does.
 
