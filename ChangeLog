@@ -1,5 +1,43 @@
 2026-10-08  Daniel Boyd  <danieljboyd@icloud.com>
 
+	Window tabbing: dragging tabs and scrolling the bar, as libadwaita's
+	AdwTabBar does.
+
+	* Source/GSWindowTabBarView.m ([GSWindowTabBarView
+	-trackTabAtIndex:fromPoint:]): New: a press on a tab dragged past
+	GTK's drag threshold (8 points) moves it along the bar; Escape
+	cancels; 32 points above or below the bar it is pulled out, and on
+	the release joins the tabs of a window with the same tabbing
+	identifier under the pointer or becomes a window of its own.  A
+	tracking loop, with periodic events while a tab is dragged.
+	([GSWindowTabBarView -autoscrollForDraggedTabAt:]): New: a tab held
+	past an end of a bar whose tabs don't fit scrolls it.
+	([GSWindowTabBarView -dropGapSlot],
+	[GSWindowTabBarView -setDropGapSlot:]): New: the gap opened in a bar
+	where a tab pulled out of another would drop.
+	([GSWindowTabBarView -showDropGapAtScreenPoint:inBar:]): New.
+	([GSWindowTabBarView -scrollOffset],
+	[GSWindowTabBarView -setScrollOffset:],
+	[GSWindowTabBarView -scrollWheel:]): New: tabs that don't fit at
+	their minimum width scroll, a wheel step as GTK's (the visible width
+	to the power 2/3); the selected tab is kept in sight.
+	([GSWindowTabBarView -drawScrollFades]): New.
+	* Source/GSWindowTabBarLayout.m (GSWindowTabSlot,
+	GSWindowTabSlotAtOffset, GSWindowTabScrollToShow): New.
+	* Headers/GSWindowTabbing.h (GSWindowTabDragged): New state bit.
+	([GSTheme -windowTabBarScrollFadeWidthForWindow:],
+	[GSTheme -drawWindowTabBarScrollFadeInRect:edge:window:]): Declare.
+	* Source/GSWindowTabbingTheme.m: Their defaults.
+	* Source/GSWindowTabbingWindow.m ([NSWindow
+	-_tabbingMoveToNewWindowAt:], [NSWindow -_canBeTabbedWith:]): New,
+	shared with -moveTabToNewWindow: and automatic tabbing.
+	* Tests/gui/NSWindow/tabbing_drag.m: New.
+	* Tests/gui/NSWindowTabGroup/group.m: Reordering, dropping, slots and
+	scrolling.
+	* README.md: Document them.
+
+2026-10-08  Daniel Boyd  <danieljboyd@icloud.com>
+
 	* Headers/GSWindowTabbing.h: GSWT_EXPORT, empty of dllimport, for the
 	public functions and constant, in place of GS_EXPORT: the code is
 	compiled into the theme or app that uses it, and GS_EXPORT made

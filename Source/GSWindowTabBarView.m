@@ -54,6 +54,13 @@ GSWindowTabScrollStep(CGFloat visible)
   return (visible > 0.0) ? pow(visible, 2.0 / 3.0) : 0.0;
 }
 
+/* While a dragged tab is held past an end of a bar whose tabs scroll,
+   the bar scrolls every GSWindowTabAutoscrollPeriod seconds by how far
+   past it is, at most GSWindowTabAutoscrollStep, as AdwTabBox scrolls
+   under a tab held at its edge. */
+static const NSTimeInterval GSWindowTabAutoscrollPeriod = 0.05;
+static const CGFloat GSWindowTabAutoscrollStep = 24.0;
+
 /* How tall a window's top strip is that takes a dropped tab when the
    window shows no tab bar (its title or header bar). */
 static const CGFloat GSWindowTabDropStripHeight = 48.0;
@@ -82,6 +89,7 @@ GSWindowTabScreenPoint(NSEvent *event)
       _tabWindow = window;
       _hoveredTab = -1;
       _pressedTab = -1;
+      _dropGapSlot = -1;
       [self setAutoresizingMask: NSViewWidthSizable | NSViewMinYMargin];
     }
   return self;
@@ -146,11 +154,17 @@ GSWindowTabScreenPoint(NSEvent *event)
   return NSMakeRect(margin, 0.0, MAX(0.0, width), NSHeight(bounds));
 }
 
+/* The slots laid out: one per tab, and one more for a drop gap. */
+- (NSUInteger) numberOfSlots
+{
+  return [self numberOfTabs] + ((_dropGapSlot >= 0) ? 1 : 0);
+}
+
 /* The tabs' area less the spacing between them, shared by the tabs. */
 - (CGFloat) tabWidth
 {
   GSTheme *theme = [GSTheme theme];
-  NSUInteger count = [self numberOfTabs];
+  NSUInteger count = [self numberOfSlots];
   CGFloat available = NSWidth([self tabsRect]);
 
   if (count > 1)
@@ -165,7 +179,7 @@ GSWindowTabScreenPoint(NSEvent *event)
 /* All the tabs side by side; wider than tabsRect when they don't fit. */
 - (CGFloat) contentWidth
 {
-  NSUInteger count = [self numberOfTabs];
+  NSUInteger count = [self numberOfSlots];
 
   if (count == 0)
     {
@@ -205,12 +219,44 @@ GSWindowTabScreenPoint(NSEvent *event)
   return _dragIndex;
 }
 
+- (NSInteger) dropGapSlot
+{
+  return _dropGapSlot;
+}
+
+/* Opens (or closes, with -1) the gap a tab dragged from another window
+   would drop into, as AdwTabBox makes room for it. */
+- (void) setDropGapSlot: (NSInteger)slot
+{
+  NSInteger count = (NSInteger)[self numberOfTabs];
+
+  if (slot > count)
+    {
+      slot = count;
+    }
+  if (slot < 0)
+    {
+      slot = -1;
+    }
+  if (slot != _dropGapSlot)
+    {
+      _dropGapSlot = slot;
+      [self setScrollOffset: _scrollOffset];
+      [self updateToolTips];
+      [self setNeedsDisplay: YES];
+    }
+}
+
 /* The slot the tab at index is shown in: its index, unless a dragged tab
    has moved the others aside. */
 - (NSUInteger) slotForTabAtIndex: (NSUInteger)index
 {
   if (_dragging == NO)
     {
+      if (_dropGapSlot >= 0 && (NSInteger)index >= _dropGapSlot)
+        {
+          return index + 1;
+        }
       return index;
     }
   return GSWindowTabSlot(index, _dragIndex, _dragSlot, _dragDetached);
@@ -244,6 +290,10 @@ GSWindowTabScreenPoint(NSEvent *event)
   if (_dragging && _dragDetached && count > 0)
     {
       count--;
+    }
+  if (_dragging == NO && count > 0)
+    {
+      return [self slotForTabAtIndex: count - 1];
     }
   return (count > 0) ? count - 1 : 0;
 }
@@ -687,6 +737,35 @@ GSWindowTabScreenPoint(NSEvent *event)
                    fromView: nil];
 }
 
+/* A dragged tab whose left edge would be at left, past an end of the
+   tabs' area: tabs that don't fit scroll that way, by how far past it
+   is, up to GSWindowTabAutoscrollStep, so every slot can be reached. */
+- (void) autoscrollForDraggedTabAt: (CGFloat)left
+{
+  NSRect tabs = [self tabsRect];
+  CGFloat width = [self tabWidth];
+  CGFloat past = 0.0;
+
+  if ([self maximumScrollOffset] <= 0.0)
+    {
+      return;
+    }
+  if (left < NSMinX(tabs))
+    {
+      past = left - NSMinX(tabs);
+    }
+  else if (left + width > NSMaxX(tabs))
+    {
+      past = left + width - NSMaxX(tabs);
+    }
+  past = MAX(-GSWindowTabAutoscrollStep,
+             MIN(past, GSWindowTabAutoscrollStep));
+  if (past != 0.0)
+    {
+      [self setScrollOffset: _scrollOffset + past];
+    }
+}
+
 /* Follows the pointer: the tab's left edge stays the same distance from
    the pointer, within the tabs' area, and the slot it would drop into is
    the nearest one; far enough above or below the bar it is pulled out. */
@@ -697,11 +776,13 @@ GSWindowTabScreenPoint(NSEvent *event)
   CGFloat width = [self tabWidth];
   CGFloat left;
 
+  _dragPoint = point;
   _dragDetached = (point.y < NSMinY(bounds) - GSWindowTabDetachDistance
     || point.y > NSMaxY(bounds) + GSWindowTabDetachDistance);
   if (_dragDetached == NO)
     {
       left = point.x - grab;
+      [self autoscrollForDraggedTabAt: left];
       left = MAX(NSMinX(tabs), MIN(left, NSMaxX(tabs) - width));
       _dragX = left;
       _dragSlot = GSWindowTabSlotAtOffset(left - NSMinX(tabs) + _scrollOffset,
@@ -811,9 +892,11 @@ GSWindowTabScreenPoint(NSEvent *event)
   target = [self windowForDropAtScreenPoint: screen];
   if (target != nil)
     {
-      [[target tabGroup] insertWindow: dragged
-                              atIndex: [self dropIndexInWindow: target
-                                                   screenPoint: screen]];
+      NSUInteger index = [self dropIndexInWindow: target
+                                     screenPoint: screen];
+
+      [[target _tabBarView] setDropGapSlot: -1];
+      [[target tabGroup] insertWindow: dragged atIndex: index];
       return;
     }
   /* A window of its own, under the pointer where the press was in this
@@ -823,16 +906,49 @@ GSWindowTabScreenPoint(NSEvent *event)
   [dragged _tabbingMoveToNewWindowAt: origin];
 }
 
+/* Opens a gap in the bar of the window the pulled-out tab would join at
+   screen, where it would drop, and closes the one in bar (the bar that
+   had it) if that is another; returns the bar with the gap, or nil. */
+- (GSWindowTabBarView *) showDropGapAtScreenPoint: (NSPoint)screen
+                                            inBar: (GSWindowTabBarView *)bar
+{
+  NSWindow *target = nil;
+  GSWindowTabBarView *targetBar = nil;
+
+  if (_dragging && _dragDetached)
+    {
+      target = [self windowForDropAtScreenPoint: screen];
+      targetBar = [target _tabBarView];
+      if (targetBar != nil && [targetBar window] != target)
+        {
+          targetBar = nil;
+        }
+    }
+  if (bar != targetBar)
+    {
+      [bar setDropGapSlot: -1];
+    }
+  if (targetBar != nil)
+    {
+      [targetBar setDropGapSlot:
+        [self dropIndexInWindow: target screenPoint: screen]];
+    }
+  return targetBar;
+}
+
 /* Tracks a press on the tab at index from point (in this view) until the
    button is released: a drag once it has moved far enough, which Escape
    cancels. */
 - (void) trackTabAtIndex: (NSUInteger)index fromPoint: (NSPoint)start
 {
-  NSUInteger mask = NSLeftMouseUpMask | NSLeftMouseDraggedMask | NSKeyDownMask;
+  NSUInteger mask = NSLeftMouseUpMask | NSLeftMouseDraggedMask
+    | NSKeyDownMask | NSPeriodicMask;
   CGFloat grab = start.x - NSMinX([self rectForTabAtIndex: index]);
   NSPoint press = [self convertPoint: start toView: nil];
   NSPoint screen = NSZeroPoint;
   BOOL cancelled = NO;
+  BOOL periodic = NO;
+  GSWindowTabBarView *gapBar = nil;
   NSEvent *event;
   NSPoint point;
 
@@ -843,6 +959,14 @@ GSWindowTabScreenPoint(NSEvent *event)
                                  untilDate: [NSDate distantFuture]
                                     inMode: NSEventTrackingRunLoopMode
                                    dequeue: YES];
+      if ([event type] == NSPeriodic)
+        {
+          if (_dragging && _dragDetached == NO)
+            {
+              [self dragToPoint: _dragPoint grab: grab];
+            }
+          continue;
+        }
       if ([event type] == NSKeyDown)
         {
           if (_dragging && [[event charactersIgnoringModifiers] isEqual: @"\e"])
@@ -870,17 +994,26 @@ GSWindowTabScreenPoint(NSEvent *event)
           _dragIndex = index;
           _dragSlot = [self slotForTabAtIndex: index];
           _hoveredTab = -1;
+          [NSEvent startPeriodicEventsAfterDelay: GSWindowTabAutoscrollPeriod
+                                      withPeriod: GSWindowTabAutoscrollPeriod];
+          periodic = YES;
         }
       [self dragToPoint: point grab: grab];
+      gapBar = [self showDropGapAtScreenPoint: screen inBar: gapBar];
       if ([event type] == NSLeftMouseUp)
         {
           break;
         }
     }
+  if (periodic)
+    {
+      [NSEvent stopPeriodicEvents];
+    }
   if (_dragging)
     {
       if (cancelled)
         {
+          [gapBar setDropGapSlot: -1];
           [self endDrag];
         }
       else

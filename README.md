@@ -98,6 +98,10 @@ overrides what it draws differently. Each gets the tab bar's window.
 - (void) drawWindowTabNewTabButtonInRect: (NSRect)rect
                                    state: (GSWindowTabState)state
                                   window: (NSWindow *)window;
+- (CGFloat) windowTabBarScrollFadeWidthForWindow: (NSWindow *)window; /* 24; 0 for none */
+- (void) drawWindowTabBarScrollFadeInRect: (NSRect)rect
+                                     edge: (NSRectEdge)edge
+                                   window: (NSWindow *)window;
 ```
 
 - **States:** `GSWindowTabState` is a set of bits (selected, hovered,
@@ -116,11 +120,13 @@ overrides what it draws differently. Each gets the tab bar's window.
 - **State** (`GSWindowTabState`, bits): `GSWindowTabSelected`, `Hovered`,
   `Pressed`, `WindowKey` (the bar's window is key), `CloseHovered`,
   `ClosePressed`, `Edited` (the tab's window has unsaved changes), `First`,
-  `Last`. The "+" button gets `Hovered`, `Pressed` and `WindowKey`.
+  `Last`, `Dragged` (the tab the pointer is moving: drawn last, over the
+  others, at the pointer). The "+" button gets `Hovered`, `Pressed` and
+  `WindowKey`.
 - **Widths:** tabs share the bar's width equally, between the minimum and
   the maximum, from the bar's start: the width less the margin at each
   end, the "+" button, and the spacing between tabs and before the "+".
-  Past the minimum, tabs are cut off at the bar's end (no scrolling yet).
+  Past the minimum, the tabs scroll inside their area, clipped to it.
   The tab rects passed to the theme are full height; a theme insets its
   drawing vertically itself.
 - **Close button:** `-windowTabCloseButtonRectForTabRect:state:window:`
@@ -129,6 +135,15 @@ overrides what it draws differently. Each gets the tab bar's window.
   testing uses the same rect.
 - **Titles:** `-drawWindowTab:…` draws the title; `GSWindowTabFittedTitle()`
   shortens one with an ellipsis to fit a width.
+- **Scroll fades:** at an end of the tabs' area where tabs are scrolled
+  out of sight, the bar asks for `-drawWindowTabBarScrollFadeInRect:…`,
+  over the tabs, in a rect as wide as
+  `-windowTabBarScrollFadeWidthForWindow:` at that edge (`NSMinXEdge`
+  or `NSMaxXEdge`). The default fades `controlColor` in towards the edge.
+- **Drops from another window:** while a tab pulled out of one window is
+  over another's bar, that bar opens an empty slot where it would drop;
+  the theme draws nothing for it (as AdwTabBox's placeholder, which the
+  drag icon covers).
 
 ## For an app: the API
 
@@ -195,10 +210,26 @@ Behaviour:
   they go on as before (Ctrl+Tab moves between key views).
 - Mouse: a press selects a tab (as GTK's tabs do); the close and "+"
   buttons act on the release; a middle click closes a tab.
+- Dragging, as AdwTabBar: a tab moved past GTK's drag threshold (8
+  points) follows the pointer along the bar while the others make room;
+  on the release it takes that slot and stays selected; Escape puts it
+  back. Held past an end of a bar whose tabs scroll, it scrolls the bar.
+  Taken 32 points above or below the bar (four times the threshold, as
+  AdwTabBox), it is pulled out: over the bar (or, with none, the top 48
+  points) of a window with the same `tabbingIdentifier`, that bar opens a
+  slot for it and the release makes it a tab there; anywhere else the
+  release makes it a window of its own, placed under the pointer where it
+  was pressed. The window appears on the release: GNUstep can't move a
+  window smoothly under a dragging pointer, and nothing is drawn under
+  the pointer while the tab is out of a bar. The drag is a tracking loop
+  over the app's own windows, not GNUstep's drag and drop, so a tab moves
+  only within its app.
+- Scrolling: tabs that don't fit at their minimum width scroll with the
+  wheel (either axis), a step being GTK's (the visible width to the power
+  2/3); the selected tab is scrolled into sight when it changes.
 
-Not yet: dragging tabs (to reorder, out to a new window, between groups),
-the tab overview, `accessoryView` in the bar, scrolling when tabs don't
-fit, accessibility. Miniaturizing and zooming act on the selected window,
+Not yet: a drag image for a pulled-out tab, the tab overview,
+`accessoryView` in the bar, accessibility. Miniaturizing and zooming act on the selected window,
 which is the only one on screen.
 
 ## Inside
@@ -272,7 +303,8 @@ libs-gui and libs-back (cairo) master into a scratch prefix, with
 gnustep-make configured `--with-library-combo=gnu-gnu-gnu
 --enable-native-objc-exceptions` (libs-gui's `@synchronized` needs
 native exceptions) and libs-base `--disable-libdispatch`; this library
-then built with no warnings and passed `make check` (47 and 54 tests).
+then built with no warnings and passed `make check` (69 and 83 tests,
+with dragging and scrolling).
 
 ## Licence and upstream
 

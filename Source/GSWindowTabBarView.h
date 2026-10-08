@@ -53,6 +53,11 @@
   CGFloat _dragX;
   NSUInteger _dragSlot;
   BOOL _dragDetached;
+  /* Where the pointer last was during a drag, for the autoscroll ticks. */
+  NSPoint _dragPoint;
+  /* A gap opened at this slot for a tab dragged from another window, or
+     -1. */
+  NSInteger _dropGapSlot;
 }
 - (id) initWithWindow: (NSWindow *)window;
 /* The tabs, a title or the selection changed. */
@@ -77,6 +82,10 @@
 /* Whether a tab is being dragged, and which. */
 - (BOOL) isDraggingTab;
 - (NSUInteger) draggedTabIndex;
+/* A gap at slot, where a tab dragged from another window would drop
+   (-1 for none); the tabs from slot on move one slot along. */
+- (NSInteger) dropGapSlot;
+- (void) setDropGapSlot: (NSInteger)slot;
 - (NSRect) closeButtonRectForTabAtIndex: (NSUInteger)index;
 /* NSZeroRect when nothing responds to -newWindowForTab:. */
 - (NSRect) newTabButtonRect;
