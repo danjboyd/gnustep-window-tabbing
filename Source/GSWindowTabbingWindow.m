@@ -446,6 +446,21 @@ static NSWindow *newTabWindow = nil;
   GSWindowTabbingForgetWindow(self);
 }
 
+/* A window with other tabs keeps the frame it shares with them when an
+   in-window menu bar or a toolbar comes or goes: the content gives up or
+   takes back the row, as for the tab bar.  GSWindowDecorationView keeps
+   the content's size and changes the frame, so a new tab, given the
+   group's frame before the theme or NSApp gave it its menu bar (on its
+   becoming key), grew the group by the bar's height, again with each new
+   tab. */
+- (void) _tabbingDecorationsDidChangeFromFrame: (NSRect)frame
+{
+  if ([self tabbedWindows] != nil && NSEqualRects([self frame], frame) == NO)
+    {
+      [self setFrame: frame display: YES];
+    }
+}
+
 - (CGFloat) _tabBarReservedHeight
 {
   NSWindowTabGroup *group = [self _tabbingGroup];

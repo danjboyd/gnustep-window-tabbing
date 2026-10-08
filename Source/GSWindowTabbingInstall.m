@@ -434,6 +434,7 @@ static IMP originalClose;
 static IMP originalValidateUserInterfaceItem;
 static IMP originalWindowDealloc;
 static IMP originalDecorationLayout;
+static IMP originalChangeWindowHeight;
 static IMP originalContentRectForFrameRect;
 static IMP originalFrameRectForContentRect;
 
@@ -544,6 +545,21 @@ GSTabbingDecorationLayout(GSWindowDecorationView *self, SEL _cmd)
   [self _layoutTabBar];
 }
 
+/* Upstream: -[GSWindowDecorationView changeWindowHeight:] keeps the
+   window's frame and ends
+   [window _tabbingDecorationsDidChangeFromFrame: frame]; */
+static void
+GSTabbingChangeWindowHeight(GSWindowDecorationView *self, SEL _cmd,
+                            CGFloat difference)
+{
+  NSWindow *window = [self window];
+  NSRect frame = [window frame];
+
+  ((void (*)(id, SEL, CGFloat))originalChangeWindowHeight)
+    (self, _cmd, difference);
+  [window _tabbingDecorationsDidChangeFromFrame: frame];
+}
+
 /* Upstream: GSWindowDecorationView's -contentRectForFrameRect:styleMask:
    leaves out the tab bar's row, and -frameRectForContentRect:styleMask:
    adds it, as they do for an in-window menu bar. */
@@ -599,6 +615,8 @@ GSWindowTabbingWrapMethods(void)
     (IMP)GSTabbingWindowDealloc, &originalWindowDealloc);
   GSWindowTabbingWrapMethod(decoration, @selector(layout),
     (IMP)GSTabbingDecorationLayout, &originalDecorationLayout);
+  GSWindowTabbingWrapMethod(decoration, @selector(changeWindowHeight:),
+    (IMP)GSTabbingChangeWindowHeight, &originalChangeWindowHeight);
   GSWindowTabbingWrapMethod(decoration,
     @selector(contentRectForFrameRect:styleMask:),
     (IMP)GSTabbingContentRectForFrameRect, &originalContentRectForFrameRect);

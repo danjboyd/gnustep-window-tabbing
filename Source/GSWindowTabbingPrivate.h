@@ -144,6 +144,10 @@ void GSWindowTabbingDidShowMaximized(NSWindow *window, BOOL maximized);
 - (BOOL) _tabbingValidateUserInterfaceItem: (id)item valid: (BOOL *)valid;
 /* From -dealloc, first. */
 - (void) _tabbingDealloc;
+/* From -[GSWindowDecorationView changeWindowHeight:], last: an
+   in-window menu bar or a toolbar was added or removed, and the frame
+   was frame before. */
+- (void) _tabbingDecorationsDidChangeFromFrame: (NSRect)frame;
 /* The height the window gives up for its tab bar (0 for none). */
 - (CGFloat) _tabBarReservedHeight;
 /* The tab bar's view while the bar is shown, else nil. */

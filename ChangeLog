@@ -1,5 +1,17 @@
 2026-10-08  Daniel Boyd  <danieljboyd@icloud.com>
 
+	* Source/GSWindowTabbingWindow.m ([NSWindow
+	-_tabbingDecorationsDidChangeFromFrame:]): New: a window with other
+	tabs keeps its frame when an in-window menu bar or a toolbar comes
+	or goes, its content giving up or taking back the row.
+	* Source/GSWindowTabbingPrivate.h: Declare it.
+	* Source/GSWindowTabbingInstall.m (GSTabbingChangeWindowHeight): New
+	wrapper of -[GSWindowDecorationView changeWindowHeight:] that calls
+	it.
+	* Tests/gui/NSWindow/tabbing_glue.m: In-window menu bars.
+
+2026-10-08  Daniel Boyd  <danieljboyd@icloud.com>
+
 	* Source/GSWindowTabbingPrivate.h (GSWindowTabbable): Replace
 	-_tabbingShowWithFrame:makeKey: with
 	-_tabbingShowWithFrame:maximized:makeKey:, and add

@@ -3,7 +3,8 @@
    the reserved row, toggling the bar, closing, Disallowed and panels,
    merging, moving a tab out, validation, the bar's mouse handling, and
    (on X11) the window manager's maximized state going with the selected
-   tab.
+   tab, and the group's frame kept when a tab's in-window menu bar comes
+   or goes.
    Needs a display (a private Xvfb, no window manager needed); skips
    without one.
 
@@ -358,6 +359,90 @@ main (int argc, char **argv)
       }
     }
   END_SET ("window tabbing on NSWindow")
+
+  START_SET ("in-window menu bars")
+    {
+      NSWindow *a, *b, *c;
+      NSView *decoration;
+      NSMenuView *menuView;
+      NSRect frame, content;
+      CGFloat height;
+
+      if (getenv ("DISPLAY") == NULL)
+        {
+          SKIP ("no display")
+        }
+      NS_DURING
+        {
+          [NSApplication sharedApplication];
+        }
+      NS_HANDLER
+        {
+          SKIP ("no display server")
+        }
+      NS_ENDHANDLER
+      GSWindowTabbingInstall ();
+      [NSWindow setAllowsAutomaticWindowTabbing: NO];
+      a = [[NSWindow alloc] initWithContentRect: NSMakeRect (100, 100, 400, 300)
+                                      styleMask: NSTitledWindowMask | NSClosableWindowMask
+                                        backing: NSBackingStoreBuffered
+                                          defer: NO];
+      b = [[NSWindow alloc] initWithContentRect: NSMakeRect (100, 100, 400, 300)
+                                      styleMask: NSTitledWindowMask | NSClosableWindowMask
+                                        backing: NSBackingStoreBuffered
+                                          defer: NO];
+      [a setTabbingIdentifier: @"menus"];
+      [b setTabbingIdentifier: @"menus"];
+      [a setReleasedWhenClosed: NO];
+      [b setReleasedWhenClosed: NO];
+      [a makeKeyAndOrderFront: nil];
+
+      /* On its own, a window grows by the bar, as libs-gui has it. */
+      decoration = [[a contentView] superview];
+      frame = [a frame];
+      menuView = AUTORELEASE ([[NSMenuView alloc] initWithFrame: NSMakeRect (0, 0, 400, 20)]);
+      [(GSWindowDecorationView *)decoration addMenuView: menuView];
+      height = NSHeight ([a frame]) - NSHeight (frame);
+      PASS (height > 0.0, "a window on its own grows by an in-window menu bar");
+
+      /* A new tab, given the group's frame (with a's bar) before it has a
+         bar of its own, as under NSWindows95InterfaceStyle, where the bar
+         comes when it becomes key. */
+      [a addTabbedWindow: b ordered: NSWindowAbove];
+      [[a tabGroup] setSelectedWindow: b];
+      frame = [b frame];
+      content = [[b contentView] frame];
+      decoration = [[b contentView] superview];
+      menuView = AUTORELEASE ([[NSMenuView alloc] initWithFrame: NSMakeRect (0, 0, 400, 20)]);
+      [(GSWindowDecorationView *)decoration addMenuView: menuView];
+      PASS (NSEqualRects ([b frame], frame),
+            "a tab given a menu bar after it is selected keeps the group's frame");
+      PASS (fabs (NSHeight ([[b contentView] frame]) - (NSHeight (content) - height)) < 0.5,
+            "its content gives up the bar's row");
+
+      /* And a third: the group stays the same size. */
+      c = [[NSWindow alloc] initWithContentRect: NSMakeRect (100, 100, 400, 300)
+                                      styleMask: NSTitledWindowMask | NSClosableWindowMask
+                                        backing: NSBackingStoreBuffered
+                                          defer: NO];
+      [c setTabbingIdentifier: @"menus"];
+      [c setReleasedWhenClosed: NO];
+      [b addTabbedWindow: c ordered: NSWindowAbove];
+      [[a tabGroup] setSelectedWindow: c];
+      decoration = [[c contentView] superview];
+      menuView = AUTORELEASE ([[NSMenuView alloc] initWithFrame: NSMakeRect (0, 0, 400, 20)]);
+      [(GSWindowDecorationView *)decoration addMenuView: menuView];
+      PASS (NSEqualRects ([c frame], frame),
+            "so each new tab leaves the group the size it was");
+      [(GSWindowDecorationView *)decoration removeMenuView];
+      PASS (NSEqualRects ([c frame], frame)
+            && fabs (NSHeight ([[c contentView] frame]) - NSHeight (content)) < 0.5,
+            "and one whose bar goes keeps it too, its content taking the row back");
+      [c close];
+      [b close];
+      [a close];
+    }
+  END_SET ("in-window menu bars")
 
   START_SET ("maximized windows")
     {
