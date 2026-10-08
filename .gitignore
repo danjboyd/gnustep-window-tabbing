@@ -9,3 +9,5 @@ Examples/*/*.app/
 *.app/
 Tests/*/GNUmakefile
 Tests/oldtests.*
+*.o
+Examples/TabDemo/Source/
