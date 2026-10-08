@@ -156,6 +156,10 @@ typedef unsigned int GSWindowTabState;
 - (CGFloat) windowTabMaximumWidthForWindow: (NSWindow *)window;
 /* The "+" button's width at the bar's end (0 for none). */
 - (CGFloat) windowTabNewTabButtonWidthForWindow: (NSWindow *)window;
+/* Space left free at each end of the bar (default 0), and between two
+   tabs and before the "+" button (default 0). */
+- (CGFloat) windowTabBarMarginForWindow: (NSWindow *)window;
+- (CGFloat) windowTabSpacingForWindow: (NSWindow *)window;
 /* A tab's close button, in the tab's rect; NSZeroRect for none in
    that state (it can't then be clicked). */
 - (NSRect) windowTabCloseButtonRectForTabRect: (NSRect)tabRect
