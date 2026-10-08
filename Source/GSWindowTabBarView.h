@@ -44,6 +44,15 @@
   NSTrackingRectTag _trackingTag;
   BOOL _tracking;
   BOOL _windowAcceptedMouseMoved;
+  /* How far the tabs are scrolled, when they don't fit. */
+  CGFloat _scrollOffset;
+  /* A tab being dragged: its index, its left edge, the slot it would
+     drop into, and whether it has been pulled out of the bar. */
+  BOOL _dragging;
+  NSUInteger _dragIndex;
+  CGFloat _dragX;
+  NSUInteger _dragSlot;
+  BOOL _dragDetached;
 }
 - (id) initWithWindow: (NSWindow *)window;
 /* The tabs, a title or the selection changed. */
@@ -54,7 +63,20 @@
 - (CGFloat) margin;
 - (CGFloat) spacing;
 - (CGFloat) tabWidth;
+/* The part of the bar the tabs take: the bar less its margins and the
+   "+" button.  Tabs that don't fit scroll inside it. */
+- (NSRect) tabsRect;
+/* The scroll offset, from 0 to -maximumScrollOffset (0 when the tabs
+   fit). */
+- (CGFloat) scrollOffset;
+- (CGFloat) maximumScrollOffset;
+- (void) setScrollOffset: (CGFloat)offset;
+/* Where the tab at index is drawn (scrolled, and moved aside by a
+   dragged tab); a pulled-out tab has an empty rect. */
 - (NSRect) rectForTabAtIndex: (NSUInteger)index;
+/* Whether a tab is being dragged, and which. */
+- (BOOL) isDraggingTab;
+- (NSUInteger) draggedTabIndex;
 - (NSRect) closeButtonRectForTabAtIndex: (NSUInteger)index;
 /* NSZeroRect when nothing responds to -newWindowForTab:. */
 - (NSRect) newTabButtonRect;
@@ -69,5 +91,22 @@
    use it without a view. */
 CGFloat GSWindowTabWidth(NSUInteger count, CGFloat width,
                          CGFloat minimum, CGFloat maximum);
+
+/* The slot a tab is shown in while the tab at dragged is dragged to slot
+   (detached: pulled out of the bar, leaving no gap).  The dragged tab
+   itself gets slot.  GSWindowTabBarLayout.m. */
+NSUInteger GSWindowTabSlot(NSUInteger index, NSUInteger dragged,
+                           NSUInteger slot, BOOL detached);
+
+/* The slot nearest left (a tab's left edge, measured from the first
+   slot's) for tabs width wide with spacing between them, among count. */
+NSUInteger GSWindowTabSlotAtOffset(CGFloat left, CGFloat width,
+                                   CGFloat spacing, NSUInteger count);
+
+/* The scroll offset, from 0 to the most the tabs can scroll, that shows
+   the whole of [left, left + width] in a visible area visible wide;
+   offset when it already does.  All measured from the first slot. */
+CGFloat GSWindowTabScrollToShow(CGFloat offset, CGFloat left, CGFloat width,
+                                CGFloat visible, CGFloat maximum);
 
 #endif /* _GNUstep_H_GSWindowTabBarView */

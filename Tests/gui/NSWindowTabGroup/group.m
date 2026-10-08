@@ -264,6 +264,66 @@ main (int argc, char **argv)
     }
   END_SET ("tab widths")
 
+  START_SET ("reordering and dropping (what a dragged tab does)")
+    {
+      FakeWindow *a = [FakeWindow named: @"A"];
+      FakeWindow *b = [FakeWindow named: @"B"];
+      FakeWindow *c = [FakeWindow named: @"C"];
+      FakeWindow *d = [FakeWindow named: @"D"];
+      NSWindowTabGroup *one = groupWith (a);
+      NSWindowTabGroup *two = groupWith (d);
+
+      [one addWindow: (NSWindow *)b];
+      [one addWindow: (NSWindow *)c];
+      [one setSelectedWindow: (NSWindow *)a];
+      [one insertWindow: (NSWindow *)a atIndex: 2];
+      PASS_EQUAL (names ([one windows]), ([NSArray arrayWithObjects: @"B", @"C", @"A", nil]),
+                  "a tab dragged to the last slot moves there");
+      PASS ([one selectedWindow] == (id)a && a->visible && b->visible == NO,
+            "and stays the selected one, still on screen");
+      [one insertWindow: (NSWindow *)a atIndex: 0];
+      PASS_EQUAL (names ([one windows]), ([NSArray arrayWithObjects: @"A", @"B", @"C", nil]),
+                  "and back to the first");
+      [two insertWindow: (NSWindow *)a atIndex: 0];
+      PASS_EQUAL (names ([two windows]), ([NSArray arrayWithObjects: @"A", @"D", nil]),
+                  "a tab dropped on another group's bar lands in the slot it was dropped in");
+      PASS ([two selectedWindow] == (id)a && a->visible && d->visible == NO,
+            "and is that group's selected tab");
+      PASS_EQUAL (names ([one windows]), ([NSArray arrayWithObjects: @"B", @"C", nil]),
+                  "leaving its old group");
+      PASS (([one selectedWindow] == (id)b && b->visible) || ([one selectedWindow] == (id)c && c->visible),
+            "whose neighbour tab is shown in its place");
+    }
+  END_SET ("reordering and dropping (what a dragged tab does)")
+
+  START_SET ("slots while a tab is dragged")
+    {
+      /* Four tabs; tab 1 dragged to slot 3: the others close up behind
+         it and open a gap at 3. */
+      PASS (GSWindowTabSlot (0, 1, 3, NO) == 0, "a tab before both stays");
+      PASS (GSWindowTabSlot (2, 1, 3, NO) == 1, "a tab after the dragged one closes up");
+      PASS (GSWindowTabSlot (3, 1, 3, NO) == 2, "up to the gap");
+      PASS (GSWindowTabSlot (1, 1, 3, NO) == 3, "the dragged tab is in its slot");
+      PASS (GSWindowTabSlot (3, 1, 0, NO) == 3, "dragged to the start, the others move right");
+      PASS (GSWindowTabSlot (0, 1, 0, NO) == 1, "even the first");
+      PASS (GSWindowTabSlot (3, 1, 3, YES) == 2, "pulled out of the bar: no gap");
+      PASS (GSWindowTabSlotAtOffset (0, 100, 6, 4) == 0, "the slot nearest a left edge: the first");
+      PASS (GSWindowTabSlotAtOffset (160, 100, 6, 4) == 2, "past half a step: the next slot");
+      PASS (GSWindowTabSlotAtOffset (900, 100, 6, 4) == 3, "never past the last");
+      PASS (GSWindowTabSlotAtOffset (-50, 100, 6, 4) == 0, "nor before the first");
+    }
+  END_SET ("slots while a tab is dragged")
+
+  START_SET ("scrolling to show a tab")
+    {
+      /* Tabs 100 wide in a 250 wide area, scrollable by up to 400. */
+      PASS (GSWindowTabScrollToShow (0, 100, 100, 250, 400) == 0, "a tab in sight: no scrolling");
+      PASS (GSWindowTabScrollToShow (0, 300, 100, 250, 400) == 150, "one to the right: just into sight");
+      PASS (GSWindowTabScrollToShow (300, 100, 100, 250, 400) == 100, "one to the left: just into sight");
+      PASS (GSWindowTabScrollToShow (0, 600, 100, 250, 400) == 400, "never past the end");
+    }
+  END_SET ("scrolling to show a tab")
+
   [pool release];
   return 0;
 }

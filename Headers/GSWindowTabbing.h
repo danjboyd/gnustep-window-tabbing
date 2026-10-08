@@ -224,6 +224,9 @@ typedef enum
  * <term>GSWindowTabPreviousHighlighted</term>
  * <desc>The tab before this one is selected, hovered or pressed (a
  * theme may leave out the separator between them).</desc>
+ * <term>GSWindowTabDragged</term>
+ * <desc>The tab is being dragged: drawn last, over the others, where
+ * the pointer has taken it.</desc>
  * </deflist>
  */
 enum
@@ -237,7 +240,8 @@ enum
   GSWindowTabEdited = 1 << 6,
   GSWindowTabFirst = 1 << 7,
   GSWindowTabLast = 1 << 8,
-  GSWindowTabPreviousHighlighted = 1 << 9
+  GSWindowTabPreviousHighlighted = 1 << 9,
+  GSWindowTabDragged = 1 << 10
 };
 typedef unsigned int GSWindowTabState;
 
@@ -330,6 +334,21 @@ GS_EXPORT NSString *const GSWindowTabBarDidChangeNotification;
 - (void) drawWindowTabNewTabButtonInRect: (NSRect)rect
                                    state: (GSWindowTabState)state
                                   window: (NSWindow *)window;
+
+/**
+ * Returns how wide the fade is at an end of the bar where tabs that
+ * don't fit are scrolled out of sight (default 24; 0 for none).
+ */
+- (CGFloat) windowTabBarScrollFadeWidthForWindow: (NSWindow *)window;
+
+/**
+ * Draws the fade over the tabs at the bar's edge (NSMinXEdge or
+ * NSMaxXEdge) where more tabs are scrolled out of sight.  The default
+ * fades the bar's background colour in towards the edge.
+ */
+- (void) drawWindowTabBarScrollFadeInRect: (NSRect)rect
+                                     edge: (NSRectEdge)edge
+                                   window: (NSWindow *)window;
 
 @end
 

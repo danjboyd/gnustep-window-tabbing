@@ -137,6 +137,13 @@ void GSWindowTabbingForgetWindow(NSWindow *window);
    -newWindowForTab:, and ask it. */
 - (BOOL) _tabbingCanCreateNewTab;
 - (void) _tabbingCreateNewTab;
+/* A tab dragged out of the bar: the window leaves its group as a window
+   of its own with its frame's origin at origin (and -moveTabToNewWindow:,
+   a little below and to the right). */
+- (void) _tabbingMoveToNewWindowAt: (NSPoint)origin;
+/* Whether other can be tabbed with the window: both can be tabs, and
+   their tabbing identifiers match. */
+- (BOOL) _canBeTabbedWith: (NSWindow *)other;
 @end
 
 /* GSWindowDecorationView's private tabbing method
