@@ -196,6 +196,25 @@ main (int argc, char **argv)
                          ([NSArray arrayWithObjects: @"B", @"C", @"A", nil])],
             "a move under the drag threshold is a click: it selects, nothing moves");
 
+      /* Pulled down, but less than 32 points past the bar's edge: still in
+         it, one slot along; then back. */
+      {
+        GSWindowTabBarView *bar = (GSWindowTabBarView *)GSWindowTabBarViewForWindow (b);
+        NSRect barRect = [bar convertRect: [bar bounds] toView: nil];
+        NSRect tab = [bar convertRect: [bar rectForTabAtIndex: 0] toView: nil];
+        CGFloat below = NSMinY (barRect) - NSMidY (tab);
+
+        path[0] = fromTab (b, 0, 20.0, 0.0);
+        path[1] = fromTab (b, 0, step, below - 28.0);
+        dragTab (b, 0, path, 2, NO);
+        PASS_EQUAL (titles ([[b tabGroup] windows]),
+                    ([NSArray arrayWithObjects: @"C", @"B", @"A", nil]),
+                    "a tab pulled 28 points below the bar stays in it");
+        path[0] = fromTab (b, 1, -20.0, 0.0);
+        path[1] = fromTab (b, 1, -step, 0.0);
+        dragTab (b, 1, path, 2, NO);
+      }
+
       /* Out of the bar, into empty space: a window of its own. */
       frame = [b frame];
       path[0] = fromTab (b, 0, 20.0, 0.0);
@@ -273,6 +292,9 @@ main (int argc, char **argv)
       offset = [bar scrollOffset];
       [bar scrollWheel: wheel ([bar window], [bar convertPoint: NSMakePoint (NSMidX (tabs), 10.0) toView: nil], 1.0)];
       PASS ([bar scrollOffset] < offset, "the wheel scrolls the tabs");
+      PASS (fabs ((offset - [bar scrollOffset])
+                  - MIN (offset, pow (NSWidth (tabs), 2.0 / 3.0))) < 0.5,
+            "one notch as far as GTK's: the visible width to the power 2/3");
       [bar scrollWheel: wheel ([bar window], [bar convertPoint: NSMakePoint (NSMidX (tabs), 10.0) toView: nil], 100.0)];
       PASS ([bar scrollOffset] == 0.0, "but no further than the first tab");
       /* The last tab is out of sight now; select the first, then it. */

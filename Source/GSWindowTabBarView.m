@@ -29,6 +29,8 @@
 /* Upstream this is a private libs-gui class as it is (Source/
    GSWindowTabBarView.m). */
 
+#include <math.h>
+
 #import "GSWindowTabBarView.h"
 #import "GSWindowTabbingPrivate.h"
 
@@ -40,11 +42,17 @@ static const CGFloat GSWindowTabDragThreshold = 8.0;
 
 /* How far above or below the bar the pointer goes before a dragged tab
    is pulled out of it, to become a window of its own or a tab of another
-   window. */
-static const CGFloat GSWindowTabDetachDistance = 24.0;
+   window: four times the drag threshold, as AdwTabBar does (measured: 32
+   pixels beyond the bar's edge). */
+static const CGFloat GSWindowTabDetachDistance = 4.0 * 8.0;
 
-/* How far one step of a scroll wheel moves the tabs. */
-static const CGFloat GSWindowTabScrollStep = 40.0;
+/* How far one step of a scroll wheel moves the tabs: GTK's scrolled
+   window step, the visible width to the power 2/3 (67 pixels for 549). */
+static CGFloat
+GSWindowTabScrollStep(CGFloat visible)
+{
+  return (visible > 0.0) ? pow(visible, 2.0 / 3.0) : 0.0;
+}
 
 /* How tall a window's top strip is that takes a dropped tab when the
    window shows no tab bar (its title or header bar). */
@@ -946,7 +954,8 @@ GSWindowTabScreenPoint(NSEvent *event)
       [super scrollWheel: event];
       return;
     }
-  [self setScrollOffset: _scrollOffset - delta * GSWindowTabScrollStep];
+  [self setScrollOffset: _scrollOffset
+    - delta * GSWindowTabScrollStep(NSWidth([self tabsRect]))];
 }
 
 - (BOOL) acceptsFirstMouse: (NSEvent *)event
