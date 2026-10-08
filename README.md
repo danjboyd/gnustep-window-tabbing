@@ -38,12 +38,20 @@ Two things the build needs:
 ```objc
 #import "GSWindowTabbing.h"
 
-- (void) activate
+- (id) initWithBundle: (NSBundle *)bundle
 {
   GSWindowTabbingInstall ();
-  [super activate];
+  return [super initWithBundle: bundle];
 }
 ```
+
+Install it before `[super initWithBundle:]`: GSTheme's `-initWithBundle:`
+records the methods a theme overrides (`_overrideNSWindowMethod_...`)
+with the implementations they replace, and an override then calls the
+tabbing code's hook as its original. Installed later (in `-activate`),
+a theme override of `-orderWindow:relativeTo:`, `-sendEvent:` or the
+others skips the hook: windows don't join tabs, and the shortcuts don't
+work.
 
 `GSWindowTabbingInstall()` adds what `NSWindow` and `GSTheme` don't
 have: the API, the hooks it needs, and GSTheme's default drawing. If
@@ -55,6 +63,12 @@ code declares and installs nothing at all.
 An app can compile it in the same way (as `Examples/TabDemo` does), to
 have tabs under any theme; call `GSWindowTabbingInstall()` after
 `[NSApplication sharedApplication]`.
+
+When an app and its theme both build it in, the runtime keeps one copy of
+each class (libobjc2 warns "Loading two versions of ..."). The copy whose
+classes were kept does the work, and the other hands its public functions
+to it, so the two can be different commits as long as the classes'
+interfaces match; the same commit is safest.
 
 ### The theme's methods
 

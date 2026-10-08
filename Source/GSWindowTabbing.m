@@ -17,6 +17,12 @@
    If not, see <http://www.gnu.org/licenses/>.
 */
 
+/* dladdr() */
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+#include <dlfcn.h>
+
 #import "GSWindowTabbingPrivate.h"
 #import "GSWindowTabBarView.h"
 #import <GNUstepGUI/GSWindowDecorationView.h>
@@ -43,6 +49,18 @@
 @end
 
 @implementation GSWindowTabbingState
+/* The copy of this code the runtime kept the classes of (see
+   GSTabClassesAreOurs()) answers these. */
++ (BOOL) gsInstallTabbing
+{
+  return GSWindowTabbingInstall ();
+}
+
++ (NSView *) gsTabBarViewForWindow: (NSWindow *)window
+{
+  return GSWindowTabBarViewForWindow (window);
+}
+
 - (void) dealloc
 {
   RELEASE (identifier);
@@ -56,6 +74,34 @@
 
 static NSMapTable *states = NULL;
 static BOOL installed = NO;
+
+/* When an app and a theme both build this code in, the runtime keeps one
+   copy of each class (libobjc2 warns "Loading two versions of ..."), and
+   each copy's functions keep their own state. Only the copy whose classes
+   were kept can work, so the other one hands its public functions to it. */
+static BOOL
+GSTabClassesAreOurs (void)
+{
+  static int ours = -1;
+
+  if (ours < 0)
+    {
+      Method method = class_getClassMethod ([GSWindowTabbingState class],
+                                            @selector(gsInstallTabbing));
+      Dl_info classes, functions;
+
+      ours = 1;
+      if (method != NULL
+          && dladdr ((void *)method_getImplementation (method), &classes) != 0
+          && dladdr ((void *)GSTabClassesAreOurs, &functions) != 0
+          && classes.dli_fbase != functions.dli_fbase)
+        {
+          ours = 0;
+        }
+    }
+  return ours == 1;
+}
+
 static BOOL allowsAutomaticTabbing = YES;
 /* Nonzero while the group orders its own windows in and out. */
 static int internalOrdering = 0;
@@ -114,7 +160,13 @@ GSTabBarReservedHeight (NSWindow *window)
 NSView *
 GSWindowTabBarViewForWindow (NSWindow *window)
 {
-  GSWindowTabbingState *state = (states != NULL) ? GSTabState (window, NO) : nil;
+  GSWindowTabbingState *state;
+
+  if (GSTabClassesAreOurs () == NO)
+    {
+      return [GSWindowTabbingState gsTabBarViewForWindow: window];
+    }
+  state = (states != NULL) ? GSTabState (window, NO) : nil;
 
   if (state == nil || state->group == nil || [state->group isTabBarVisible] == NO)
     {
@@ -844,6 +896,10 @@ GSWindowTabbingInstall (void)
   if (installed)
     {
       return YES;
+    }
+  if (GSTabClassesAreOurs () == NO)
+    {
+      return [GSWindowTabbingState gsInstallTabbing];
     }
   if ([NSWindow instancesRespondToSelector: @selector(addTabbedWindow:ordered:)])
     {
