@@ -478,10 +478,37 @@ GSTabWindowToJoin (NSWindow *window)
     {
       return nil;
     }
+  /* The key window; while the app isn't active (NSApp has none) the
+     window that says it's key, the main window, or else the frontmost
+     window this one can tab with. */
   key = [NSApp keyWindow];
   if (key == nil)
     {
-      key = [NSApp mainWindow];
+      NSArray *ordered = [NSApp orderedWindows];
+      NSUInteger i;
+
+      for (i = 0; i < [ordered count] && key == nil; i++)
+        {
+          if ([[ordered objectAtIndex: i] isKeyWindow])
+            {
+              key = [ordered objectAtIndex: i];
+            }
+        }
+      if (key == nil)
+        {
+          key = [NSApp mainWindow];
+        }
+      for (i = 0; i < [ordered count] && key == nil; i++)
+        {
+          NSWindow *candidate = [ordered objectAtIndex: i];
+
+          if (candidate != window && [candidate isVisible]
+            && GSWindowCanBeTabbed (candidate)
+            && [[candidate tabbingIdentifier] isEqual: [window tabbingIdentifier]])
+            {
+              key = candidate;
+            }
+        }
     }
   if (key == nil || key == window || [key isVisible] == NO
     || GSWindowCanBeTabbed (key) == NO

@@ -1,0 +1,4 @@
+ADDITIONAL_INCLUDE_DIRS += -I../../Headers -I../../Source
+ADDITIONAL_OBJCFLAGS += -Wall
+ADDITIONAL_LIB_DIRS += -L../../obj
+ADDITIONAL_TOOL_LIBS += -lGSWindowTabbing -lgnustep-gui

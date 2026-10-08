@@ -7,3 +7,5 @@ Tests/*/obj/
 Examples/*/obj/
 Examples/*/*.app/
 *.app/
+Tests/*/GNUmakefile
+Tests/oldtests.*

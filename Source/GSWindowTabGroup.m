@@ -333,9 +333,20 @@ GSTabWindowAt (NSArray *windows, NSUInteger index)
   RELEASE (self);
 }
 
+/* Shows or hides the bar; back to automatic when that's what automatic
+   would do (hidden, then shown again, with two tabs). */
 - (void) gsToggleTabBar
 {
-  _barState = [self isTabBarVisible] ? GSWindowTabBarHidden : GSWindowTabBarShown;
+  BOOL show = ([self isTabBarVisible] == NO);
+
+  if (show == ([_windows count] > 1))
+    {
+      _barState = GSWindowTabBarAutomatic;
+    }
+  else
+    {
+      _barState = show ? GSWindowTabBarShown : GSWindowTabBarHidden;
+    }
   [self notifyWindows: nil];
 }
 

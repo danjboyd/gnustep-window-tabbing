@@ -209,6 +209,11 @@ main (int argc, char **argv)
       [group addWindow: (NSWindow *)[FakeWindow named: @"B"]];
       [group gsToggleTabBar];
       PASS ([group isTabBarVisible] == NO, "and hides it again, even with two");
+      [group gsToggleTabBar];
+      PASS ([group isTabBarVisible], "shown again");
+      [group gsWindowWillLeave: [[group windows] lastObject]];
+      PASS ([group isTabBarVisible] == NO,
+            "hidden and shown again with two tabs is automatic: it goes at one");
       PASS (a->changes > 0, "windows hear of every change (to redraw the bar)");
     }
   END_SET ("the tab bar's visibility")
