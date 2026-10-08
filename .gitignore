@@ -1,0 +1,9 @@
+obj/
+*.d
+derived_src/
+Tests/tests.log
+Tests/tests.sum
+Tests/*/obj/
+Examples/*/obj/
+Examples/*/*.app/
+*.app/
