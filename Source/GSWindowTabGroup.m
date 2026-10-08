@@ -2,6 +2,11 @@
 
    Copyright (C) 2026 Daniel Boyd
 
+   Author: Daniel Boyd <danieljboyd@icloud.com>
+   Date: 2026
+
+   This file is part of the GNUstep GUI Library.
+
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
@@ -14,14 +19,16 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with this library; see the file COPYING.LIB.
-   If not, see <http://www.gnu.org/licenses/>.
+   If not, see <http://www.gnu.org/licenses/> or write to the
+   Free Software Foundation, 51 Franklin Street, Fifth Floor,
+   Boston, MA 02110-1301, USA.
 */
 
 #import "GSWindowTabbingPrivate.h"
 #import "GSWindowTabBarView.h"
 
 CGFloat
-GSWindowTabWidth (NSUInteger count, CGFloat width, CGFloat minimum, CGFloat maximum)
+GSWindowTabWidth(NSUInteger count, CGFloat width, CGFloat minimum, CGFloat maximum)
 {
   CGFloat each;
 
@@ -29,7 +36,7 @@ GSWindowTabWidth (NSUInteger count, CGFloat width, CGFloat minimum, CGFloat maxi
     {
       return 0.0;
     }
-  each = floor (width / count);
+  each = floor(width / count);
   if (maximum > 0.0 && each > maximum)
     {
       each = maximum;
@@ -48,7 +55,7 @@ GSWindowTabWidth (NSUInteger count, CGFloat width, CGFloat minimum, CGFloat maxi
    its own is not held by its group. With two or more, the group retains
    them all, as the hidden ones have nothing else showing them. */
 static id
-GSTabWindowAt (NSArray *windows, NSUInteger index)
+GSTabWindowAt(NSArray *windows, NSUInteger index)
 {
   return [[windows objectAtIndex: index] nonretainedObjectValue];
 }
@@ -64,7 +71,7 @@ GSTabWindowAt (NSArray *windows, NSUInteger index)
 {
   if ((self = [super init]) != nil)
     {
-      ASSIGNCOPY (_identifier, identifier);
+      ASSIGNCOPY(_identifier, identifier);
       _windows = [NSMutableArray new];
       _selectedWindow = nil;
       _barState = GSWindowTabBarAutomatic;
@@ -81,11 +88,11 @@ GSTabWindowAt (NSArray *windows, NSUInteger index)
     {
       for (i = 0; i < [_windows count]; i++)
         {
-          RELEASE (GSTabWindowAt (_windows, i));
+          RELEASE(GSTabWindowAt(_windows, i));
         }
     }
-  RELEASE (_windows);
-  RELEASE (_identifier);
+  RELEASE(_windows);
+  RELEASE(_identifier);
   [super dealloc];
 }
 
@@ -101,7 +108,7 @@ GSTabWindowAt (NSArray *windows, NSUInteger index)
 
   for (i = 0; i < [_windows count]; i++)
     {
-      [windows addObject: GSTabWindowAt (_windows, i)];
+      [windows addObject: GSTabWindowAt(_windows, i)];
     }
   return windows;
 }
@@ -112,7 +119,7 @@ GSTabWindowAt (NSArray *windows, NSUInteger index)
 
   for (i = 0; i < [_windows count]; i++)
     {
-      if (GSTabWindowAt (_windows, i) == window)
+      if (GSTabWindowAt(_windows, i) == window)
         {
           return i;
         }
@@ -140,11 +147,11 @@ GSTabWindowAt (NSArray *windows, NSUInteger index)
     {
       if (retain)
         {
-          RETAIN (GSTabWindowAt (_windows, i));
+          RETAIN(GSTabWindowAt(_windows, i));
         }
       else
         {
-          RELEASE (GSTabWindowAt (_windows, i));
+          RELEASE(GSTabWindowAt(_windows, i));
         }
     }
 }
@@ -238,18 +245,18 @@ GSTabWindowAt (NSArray *windows, NSUInteger index)
   if (current != NSNotFound)
     {
       /* Already here: only its place changes. */
-      NSValue *value = RETAIN ([_windows objectAtIndex: current]);
+      NSValue *value = RETAIN([_windows objectAtIndex: current]);
 
       [_windows removeObjectAtIndex: current];
-      index = MAX (0, MIN (index, (NSInteger)[_windows count]));
+      index = MAX(0, MIN(index, (NSInteger)[_windows count]));
       [_windows insertObject: value atIndex: index];
-      RELEASE (value);
+      RELEASE(value);
       [self notifyWindows: nil];
       return;
     }
 
   /* Keep the window alive while it moves between groups. */
-  RETAIN (window);
+  RETAIN(window);
   old = [(id)window gsTabGroup];
   if (old != nil && old != self)
     {
@@ -257,14 +264,14 @@ GSTabWindowAt (NSArray *windows, NSUInteger index)
     }
   if (_identifier == nil)
     {
-      ASSIGNCOPY (_identifier, [(id)window tabbingIdentifier]);
+      ASSIGNCOPY(_identifier, [(id)window tabbingIdentifier]);
     }
-  index = MAX (0, MIN (index, (NSInteger)[_windows count]));
+  index = MAX(0, MIN(index, (NSInteger)[_windows count]));
   [_windows insertObject: [NSValue valueWithNonretainedObject: window]
                  atIndex: index];
   if (_retainsWindows)
     {
-      RETAIN (window);
+      RETAIN(window);
     }
   [self updateRetention];
   [(id)window gsSetTabGroup: self];
@@ -277,7 +284,7 @@ GSTabWindowAt (NSArray *windows, NSUInteger index)
       [self switchToWindow: window];
     }
   [self notifyWindows: nil];
-  RELEASE (window);
+  RELEASE(window);
 }
 
 - (void) removeWindow: (NSWindow *)window
@@ -286,11 +293,11 @@ GSTabWindowAt (NSArray *windows, NSUInteger index)
     {
       return;
     }
-  RETAIN (window);
+  RETAIN(window);
   [self gsWindowWillLeave: window];
   [(id)window gsSetTabGroup: nil];
   [(id)window gsTabGroupDidChange];
-  RELEASE (window);
+  RELEASE(window);
 }
 
 - (void) gsWindowWillLeave: (id)window
@@ -301,7 +308,7 @@ GSTabWindowAt (NSArray *windows, NSUInteger index)
     {
       return;
     }
-  RETAIN (self);
+  RETAIN(self);
   if (window == _selectedWindow)
     {
       NSUInteger count = [_windows count];
@@ -309,7 +316,7 @@ GSTabWindowAt (NSArray *windows, NSUInteger index)
       if (count > 1)
         {
           /* Its neighbour: the next tab, or the previous for the last. */
-          id neighbour = GSTabWindowAt (_windows, (index + 1 < count) ? index + 1 : index - 1);
+          id neighbour = GSTabWindowAt(_windows, (index + 1 < count) ? index + 1 : index - 1);
           NSRect frame = [window frame];
           BOOL key = [window isKeyWindow];
 
@@ -326,11 +333,11 @@ GSTabWindowAt (NSArray *windows, NSUInteger index)
     {
       /* Balanced by the caller's retain, or the window is released by
          whoever closed it. */
-      AUTORELEASE (window);
+      AUTORELEASE(window);
     }
   [self updateRetention];
   [self notifyWindows: window];
-  RELEASE (self);
+  RELEASE(self);
 }
 
 /* Shows or hides the bar; back to automatic when that's what automatic
@@ -365,13 +372,13 @@ GSTabWindowAt (NSArray *windows, NSUInteger index)
       index = 0;
     }
   index = forward ? (index + 1) % count : (index + count - 1) % count;
-  [self setSelectedWindow: GSTabWindowAt (_windows, index)];
+  [self setSelectedWindow: GSTabWindowAt(_windows, index)];
 }
 
 - (NSString *) description
 {
   return [NSString stringWithFormat: @"<%@ %p identifier %@, %lu window(s)>",
-                   NSStringFromClass ([self class]), self, _identifier,
+                   NSStringFromClass([self class]), self, _identifier,
                    (unsigned long)[_windows count]];
 }
 
@@ -391,10 +398,10 @@ GSTabWindowAt (NSArray *windows, NSUInteger index)
 
 - (void) dealloc
 {
-  RELEASE (_title);
-  RELEASE (_attributedTitle);
-  RELEASE (_toolTip);
-  RELEASE (_accessoryView);
+  RELEASE(_title);
+  RELEASE(_attributedTitle);
+  RELEASE(_toolTip);
+  RELEASE(_accessoryView);
   [super dealloc];
 }
 
@@ -437,7 +444,7 @@ GSTabWindowAt (NSArray *windows, NSUInteger index)
 
 - (void) setTitle: (NSString *)title
 {
-  ASSIGNCOPY (_title, title);
+  ASSIGNCOPY(_title, title);
   [self changed];
 }
 
@@ -448,7 +455,7 @@ GSTabWindowAt (NSArray *windows, NSUInteger index)
 
 - (void) setAttributedTitle: (NSAttributedString *)title
 {
-  ASSIGNCOPY (_attributedTitle, title);
+  ASSIGNCOPY(_attributedTitle, title);
   [self changed];
 }
 
@@ -459,7 +466,7 @@ GSTabWindowAt (NSArray *windows, NSUInteger index)
 
 - (void) setToolTip: (NSString *)toolTip
 {
-  ASSIGNCOPY (_toolTip, toolTip);
+  ASSIGNCOPY(_toolTip, toolTip);
   [self changed];
 }
 
@@ -470,7 +477,7 @@ GSTabWindowAt (NSArray *windows, NSUInteger index)
 
 - (void) setAccessoryView: (NSView *)view
 {
-  ASSIGN (_accessoryView, view);
+  ASSIGN(_accessoryView, view);
   [self changed];
 }
 

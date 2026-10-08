@@ -2,6 +2,11 @@
 
    Copyright (C) 2026 Daniel Boyd
 
+   Author: Daniel Boyd <danieljboyd@icloud.com>
+   Date: 2026
+
+   This file is part of the GNUstep GUI Library.
+
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
@@ -14,7 +19,9 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with this library; see the file COPYING.LIB.
-   If not, see <http://www.gnu.org/licenses/>.
+   If not, see <http://www.gnu.org/licenses/> or write to the
+   Free Software Foundation, 51 Franklin Street, Fifth Floor,
+   Boston, MA 02110-1301, USA.
 */
 
 #import "GSWindowTabBarView.h"
@@ -26,7 +33,7 @@
 
 - (id) initWithWindow: (NSWindow *)window
 {
-  if ((self = [super initWithFrame: NSMakeRect (0.0, 0.0, 100.0, 30.0)]) != nil)
+  if ((self = [super initWithFrame: NSMakeRect(0.0, 0.0, 100.0, 30.0)]) != nil)
     {
       _tabWindow = window;
       _hoveredTab = -1;
@@ -55,7 +62,7 @@
 {
   CGFloat width;
 
-  if (GSWindowTabbingCanCreateNewTab (_tabWindow) == NO)
+  if (GSWindowTabbingCanCreateNewTab(_tabWindow) == NO)
     {
       return NSZeroRect;
     }
@@ -64,18 +71,18 @@
     {
       return NSZeroRect;
     }
-  return NSMakeRect (NSMaxX ([self bounds]) - [self margin] - width, 0.0,
-                     width, NSHeight ([self bounds]));
+  return NSMakeRect(NSMaxX([self bounds]) - [self margin] - width, 0.0,
+                     width, NSHeight([self bounds]));
 }
 
 - (CGFloat) margin
 {
-  return MAX (0.0, [[GSTheme theme] windowTabBarMarginForWindow: _tabWindow]);
+  return MAX(0.0, [[GSTheme theme] windowTabBarMarginForWindow: _tabWindow]);
 }
 
 - (CGFloat) spacing
 {
-  return MAX (0.0, [[GSTheme theme] windowTabSpacingForWindow: _tabWindow]);
+  return MAX(0.0, [[GSTheme theme] windowTabSpacingForWindow: _tabWindow]);
 }
 
 /* The bar's width less its margins, the "+" button and the spacing
@@ -84,9 +91,9 @@
 {
   GSTheme *theme = [GSTheme theme];
   NSUInteger count = [self numberOfTabs];
-  CGFloat newTab = NSWidth ([self newTabButtonRect]);
+  CGFloat newTab = NSWidth([self newTabButtonRect]);
   CGFloat spacing = [self spacing];
-  CGFloat available = NSWidth ([self bounds]) - 2.0 * [self margin] - newTab;
+  CGFloat available = NSWidth([self bounds]) - 2.0 * [self margin] - newTab;
 
   if (newTab > 0.0)
     {
@@ -96,7 +103,7 @@
     {
       available -= spacing * (count - 1);
     }
-  return GSWindowTabWidth (count, available,
+  return GSWindowTabWidth(count, available,
                            [theme windowTabMinimumWidthForWindow: _tabWindow],
                            [theme windowTabMaximumWidthForWindow: _tabWindow]);
 }
@@ -105,8 +112,8 @@
 {
   CGFloat width = [self tabWidth];
 
-  return NSMakeRect ([self margin] + index * (width + [self spacing]), 0.0,
-                     width, NSHeight ([self bounds]));
+  return NSMakeRect([self margin] + index * (width + [self spacing]), 0.0,
+                     width, NSHeight([self bounds]));
 }
 
 - (GSWindowTabState) stateForTabAtIndex: (NSUInteger)index
@@ -173,7 +180,7 @@
 
   for (i = 0; i < count; i++)
     {
-      if (NSPointInRect (point, [self rectForTabAtIndex: i]))
+      if (NSPointInRect(point, [self rectForTabAtIndex: i]))
         {
           return i;
         }
@@ -222,7 +229,7 @@
       GSWindowTabState state = [self stateForTabAtIndex: i];
       NSRect closeRect;
 
-      if (NSIntersectsRect (tabRect, rect) == NO)
+      if (NSIntersectsRect(tabRect, rect) == NO)
         {
           continue;
         }
@@ -231,12 +238,12 @@
                      state: state
                     window: _tabWindow];
       closeRect = [theme windowTabCloseButtonRectForTabRect: tabRect state: state window: _tabWindow];
-      if (NSIsEmptyRect (closeRect) == NO)
+      if (NSIsEmptyRect(closeRect) == NO)
         {
           [theme drawWindowTabCloseButtonInRect: closeRect state: state window: _tabWindow];
         }
     }
-  if (NSIsEmptyRect (newTab) == NO)
+  if (NSIsEmptyRect(newTab) == NO)
     {
       GSWindowTabState state = 0;
 
@@ -289,8 +296,8 @@
 - (void) updateHover: (NSPoint)point
 {
   NSInteger tab = [self tabIndexAtPoint: point];
-  BOOL closeHovered = (tab >= 0 && NSPointInRect (point, [self closeButtonRectForTabAtIndex: tab]));
-  BOOL newTabHovered = NSPointInRect (point, [self newTabButtonRect]);
+  BOOL closeHovered = (tab >= 0 && NSPointInRect(point, [self closeButtonRectForTabAtIndex: tab]));
+  BOOL newTabHovered = NSPointInRect(point, [self newTabButtonRect]);
 
   if (tab != _hoveredTab || closeHovered != _closeHovered || newTabHovered != _newTabHovered)
     {
@@ -320,7 +327,7 @@
 - (void) mouseExited: (NSEvent *)event
 {
   [[self window] setAcceptsMouseMovedEvents: _windowAcceptedMouseMoved];
-  [self updateHover: NSMakePoint (-1.0, -1.0)];
+  [self updateHover: NSMakePoint(-1.0, -1.0)];
 }
 
 /* Tracks the button under the mouse until it's released; YES if it's
@@ -338,7 +345,7 @@
                                  untilDate: [NSDate distantFuture]
                                     inMode: NSEventTrackingRunLoopMode
                                    dequeue: YES];
-      inside = NSPointInRect ([self convertPoint: [event locationInWindow] fromView: nil], rect);
+      inside = NSPointInRect([self convertPoint: [event locationInWindow] fromView: nil], rect);
       if (inside != *pressed)
         {
           *pressed = inside;
@@ -362,11 +369,11 @@
   NSRect newTab = [self newTabButtonRect];
   NSInteger tab = [self tabIndexAtPoint: point];
 
-  if (NSPointInRect (point, newTab))
+  if (NSPointInRect(point, newTab))
     {
       if ([self trackButtonInRect: newTab pressed: &_newTabPressed])
         {
-          GSWindowTabbingSendNewWindowForTab (_tabWindow);
+          GSWindowTabbingSendNewWindowForTab(_tabWindow);
         }
       return;
     }
@@ -374,7 +381,7 @@
     {
       return;
     }
-  if (NSPointInRect (point, [self closeButtonRectForTabAtIndex: tab]))
+  if (NSPointInRect(point, [self closeButtonRectForTabAtIndex: tab]))
     {
       NSWindow *window = [[self tabWindows] objectAtIndex: tab];
       BOOL released;

@@ -3,6 +3,11 @@
 
    Copyright (C) 2026 Daniel Boyd
 
+   Author: Daniel Boyd <danieljboyd@icloud.com>
+   Date: 2026
+
+   This file is part of the GNUstep GUI Library.
+
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
@@ -15,14 +20,16 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with this library; see the file COPYING.LIB.
-   If not, see <http://www.gnu.org/licenses/>.
+   If not, see <http://www.gnu.org/licenses/> or write to the
+   Free Software Foundation, 51 Franklin Street, Fifth Floor,
+   Boston, MA 02110-1301, USA.
 */
 
 #import "GSWindowTabbingPrivate.h"
 #import <objc/runtime.h>
 
 NSString *
-GSWindowTabFittedTitle (NSString *title, NSDictionary *attributes, CGFloat width)
+GSWindowTabFittedTitle(NSString *title, NSDictionary *attributes, CGFloat width)
 {
   NSString *ellipsis = [NSString stringWithFormat: @"%C", (unichar)0x2026];
   NSUInteger low = 0;
@@ -115,16 +122,16 @@ GSWindowTabFittedTitle (NSString *title, NSDictionary *attributes, CGFloat width
     {
       return NSZeroRect;
     }
-  return NSMakeRect (NSMaxX (tabRect) - 6.0 - size,
-                     floor (NSMidY (tabRect) - size / 2.0), size, size);
+  return NSMakeRect(NSMaxX(tabRect) - 6.0 - size,
+                     floor(NSMidY(tabRect) - size / 2.0), size, size);
 }
 
 - (void) drawWindowTabBarBackgroundInRect: (NSRect)rect window: (NSWindow *)window
 {
   [[NSColor controlColor] set];
-  NSRectFill (rect);
+  NSRectFill(rect);
   [[NSColor controlShadowColor] set];
-  NSRectFill (NSMakeRect (NSMinX (rect), NSMinY (rect), NSWidth (rect), 1.0));
+  NSRectFill(NSMakeRect(NSMinX(rect), NSMinY(rect), NSWidth(rect), 1.0));
 }
 
 - (void) drawWindowTab: (NSWindowTab *)tab
@@ -135,26 +142,26 @@ GSWindowTabFittedTitle (NSString *title, NSDictionary *attributes, CGFloat width
   NSMutableDictionary *attributes = [NSMutableDictionary dictionary];
   NSColor *textColor = [NSColor controlTextColor];
   NSString *title = [tab title];
-  NSRect titleRect = NSInsetRect (rect, 26.0, 0.0);
+  NSRect titleRect = NSInsetRect(rect, 26.0, 0.0);
   NSSize size;
 
   if (state & GSWindowTabSelected)
     {
       [[NSColor controlBackgroundColor] set];
-      NSRectFill (NSMakeRect (NSMinX (rect), NSMinY (rect), NSWidth (rect), NSHeight (rect)));
+      NSRectFill(NSMakeRect(NSMinX(rect), NSMinY(rect), NSWidth(rect), NSHeight(rect)));
       [[NSColor controlShadowColor] set];
-      NSRectFill (NSMakeRect (NSMinX (rect), NSMinY (rect), 1.0, NSHeight (rect)));
-      NSRectFill (NSMakeRect (NSMaxX (rect) - 1.0, NSMinY (rect), 1.0, NSHeight (rect)));
+      NSRectFill(NSMakeRect(NSMinX(rect), NSMinY(rect), 1.0, NSHeight(rect)));
+      NSRectFill(NSMakeRect(NSMaxX(rect) - 1.0, NSMinY(rect), 1.0, NSHeight(rect)));
     }
   else
     {
       if (state & GSWindowTabHovered)
         {
           [[NSColor controlHighlightColor] set];
-          NSRectFill (rect);
+          NSRectFill(rect);
         }
       [[NSColor controlShadowColor] set];
-      NSRectFill (NSMakeRect (NSMaxX (rect) - 1.0, NSMinY (rect) + 5.0, 1.0, NSHeight (rect) - 10.0));
+      NSRectFill(NSMakeRect(NSMaxX(rect) - 1.0, NSMinY(rect) + 5.0, 1.0, NSHeight(rect) - 10.0));
     }
   if ((state & GSWindowTabWindowKey) == 0 && (state & GSWindowTabSelected) == 0)
     {
@@ -166,32 +173,32 @@ GSWindowTabFittedTitle (NSString *title, NSDictionary *attributes, CGFloat width
     }
   [attributes setObject: [NSFont systemFontOfSize: 0.0] forKey: NSFontAttributeName];
   [attributes setObject: textColor forKey: NSForegroundColorAttributeName];
-  title = GSWindowTabFittedTitle (title, attributes, NSWidth (titleRect));
+  title = GSWindowTabFittedTitle(title, attributes, NSWidth(titleRect));
   size = [title sizeWithAttributes: attributes];
-  [title drawAtPoint: NSMakePoint (floor (NSMidX (titleRect) - size.width / 2.0),
-                                   floor (NSMidY (rect) - size.height / 2.0))
+  [title drawAtPoint: NSMakePoint(floor(NSMidX(titleRect) - size.width / 2.0),
+                                   floor(NSMidY(rect) - size.height / 2.0))
       withAttributes: attributes];
 }
 
 static void
-GSWindowTabDrawCross (NSRect rect, CGFloat inset, BOOL plus)
+GSWindowTabDrawCross(NSRect rect, CGFloat inset, BOOL plus)
 {
   NSBezierPath *path = [NSBezierPath bezierPath];
-  NSRect r = NSInsetRect (rect, inset, inset);
+  NSRect r = NSInsetRect(rect, inset, inset);
 
   if (plus)
     {
-      [path moveToPoint: NSMakePoint (NSMidX (r), NSMinY (r))];
-      [path lineToPoint: NSMakePoint (NSMidX (r), NSMaxY (r))];
-      [path moveToPoint: NSMakePoint (NSMinX (r), NSMidY (r))];
-      [path lineToPoint: NSMakePoint (NSMaxX (r), NSMidY (r))];
+      [path moveToPoint: NSMakePoint(NSMidX(r), NSMinY(r))];
+      [path lineToPoint: NSMakePoint(NSMidX(r), NSMaxY(r))];
+      [path moveToPoint: NSMakePoint(NSMinX(r), NSMidY(r))];
+      [path lineToPoint: NSMakePoint(NSMaxX(r), NSMidY(r))];
     }
   else
     {
-      [path moveToPoint: NSMakePoint (NSMinX (r), NSMinY (r))];
-      [path lineToPoint: NSMakePoint (NSMaxX (r), NSMaxY (r))];
-      [path moveToPoint: NSMakePoint (NSMinX (r), NSMaxY (r))];
-      [path lineToPoint: NSMakePoint (NSMaxX (r), NSMinY (r))];
+      [path moveToPoint: NSMakePoint(NSMinX(r), NSMinY(r))];
+      [path lineToPoint: NSMakePoint(NSMaxX(r), NSMaxY(r))];
+      [path moveToPoint: NSMakePoint(NSMinX(r), NSMaxY(r))];
+      [path lineToPoint: NSMakePoint(NSMaxX(r), NSMinY(r))];
     }
   [path setLineWidth: 1.5];
   [path stroke];
@@ -208,47 +215,47 @@ GSWindowTabDrawCross (NSRect rect, CGFloat inset, BOOL plus)
       [[NSBezierPath bezierPathWithOvalInRect: rect] fill];
     }
   [[NSColor controlTextColor] set];
-  GSWindowTabDrawCross (rect, 4.0, NO);
+  GSWindowTabDrawCross(rect, 4.0, NO);
 }
 
 - (void) drawWindowTabNewTabButtonInRect: (NSRect)rect
                                    state: (GSWindowTabState)state
                                   window: (NSWindow *)window
 {
-  NSRect button = NSInsetRect (rect, 4.0, 4.0);
+  NSRect button = NSInsetRect(rect, 4.0, 4.0);
 
   if (state & (GSWindowTabHovered | GSWindowTabPressed))
     {
       [((state & GSWindowTabPressed) ? [NSColor controlShadowColor]
                                      : [NSColor controlHighlightColor]) set];
-      NSRectFill (button);
+      NSRectFill(button);
     }
   [[NSColor controlTextColor] set];
-  GSWindowTabDrawCross (button, 6.0, YES);
+  GSWindowTabDrawCross(button, 6.0, YES);
 }
 
 @end
 
 void
-GSWindowTabbingInstallThemeDefaults (void)
+GSWindowTabbingInstallThemeDefaults(void)
 {
   Class donor = [GSWindowTabbingThemeDefaults class];
   Class theme = [GSTheme class];
   unsigned int count = 0;
   unsigned int i;
-  Method *methods = class_copyMethodList (donor, &count);
+  Method *methods = class_copyMethodList(donor, &count);
 
   for (i = 0; i < count; i++)
     {
-      SEL selector = method_getName (methods[i]);
+      SEL selector = method_getName(methods[i]);
 
-      if (class_getInstanceMethod (theme, selector) == NULL)
+      if (class_getInstanceMethod(theme, selector) == NULL)
         {
-          class_addMethod (theme, selector, method_getImplementation (methods[i]),
-                           method_getTypeEncoding (methods[i]));
+          class_addMethod(theme, selector, method_getImplementation(methods[i]),
+                           method_getTypeEncoding(methods[i]));
         }
     }
-  free (methods);
+  free(methods);
 }
 
 #endif /* GS_HAS_WINDOW_TABBING */

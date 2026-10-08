@@ -2,6 +2,11 @@
 
    Copyright (C) 2026 Daniel Boyd
 
+   Author: Daniel Boyd <danieljboyd@icloud.com>
+   Date: 2026
+
+   This file is part of the GNUstep GUI Library.
+
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
@@ -14,7 +19,9 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with this library; see the file COPYING.LIB.
-   If not, see <http://www.gnu.org/licenses/>.
+   If not, see <http://www.gnu.org/licenses/> or write to the
+   Free Software Foundation, 51 Franklin Street, Fifth Floor,
+   Boston, MA 02110-1301, USA.
 */
 
 /* dladdr() */
@@ -53,21 +60,21 @@
    GSTabClassesAreOurs()) answers these. */
 + (BOOL) gsInstallTabbing
 {
-  return GSWindowTabbingInstall ();
+  return GSWindowTabbingInstall();
 }
 
 + (NSView *) gsTabBarViewForWindow: (NSWindow *)window
 {
-  return GSWindowTabBarViewForWindow (window);
+  return GSWindowTabBarViewForWindow(window);
 }
 
 - (void) dealloc
 {
-  RELEASE (identifier);
-  RELEASE (tab);
-  RELEASE (group);
+  RELEASE(identifier);
+  RELEASE(tab);
+  RELEASE(group);
   [barView removeFromSuperview];
-  RELEASE (barView);
+  RELEASE(barView);
   [super dealloc];
 }
 @end
@@ -80,20 +87,20 @@ static BOOL installed = NO;
    each copy's functions keep their own state. Only the copy whose classes
    were kept can work, so the other one hands its public functions to it. */
 static BOOL
-GSTabClassesAreOurs (void)
+GSTabClassesAreOurs(void)
 {
   static int ours = -1;
 
   if (ours < 0)
     {
-      Method method = class_getClassMethod ([GSWindowTabbingState class],
+      Method method = class_getClassMethod([GSWindowTabbingState class],
                                             @selector(gsInstallTabbing));
       Dl_info classes, functions;
 
       ours = 1;
       if (method != NULL
-          && dladdr ((void *)method_getImplementation (method), &classes) != 0
-          && dladdr ((void *)GSTabClassesAreOurs, &functions) != 0
+          && dladdr((void *)method_getImplementation(method), &classes) != 0
+          && dladdr((void *)GSTabClassesAreOurs, &functions) != 0
           && classes.dli_fbase != functions.dli_fbase)
         {
           ours = 0;
@@ -110,23 +117,23 @@ static int internalOrdering = 0;
 static NSWindow *newTabWindow = nil;
 
 static GSWindowTabbingState *
-GSTabState (NSWindow *window, BOOL create)
+GSTabState(NSWindow *window, BOOL create)
 {
-  GSWindowTabbingState *state = NSMapGet (states, window);
+  GSWindowTabbingState *state = NSMapGet(states, window);
 
   if (state == nil && create)
     {
       state = [GSWindowTabbingState new];
       state->mode = NSWindowTabbingModeAutomatic;
-      NSMapInsert (states, window, state);
-      RELEASE (state);
+      NSMapInsert(states, window, state);
+      RELEASE(state);
     }
   return state;
 }
 
 /* Windows that can be tabs: titled windows that aren't panels. */
 static BOOL
-GSWindowCanBeTabbed (NSWindow *window)
+GSWindowCanBeTabbed(NSWindow *window)
 {
   return [window isKindOfClass: [NSPanel class]] == NO
     && ([window styleMask] & NSTitledWindowMask) != 0
@@ -135,7 +142,7 @@ GSWindowCanBeTabbed (NSWindow *window)
 
 /* The height a window gives up for its tab bar. */
 static CGFloat
-GSTabBarReservedHeight (NSWindow *window)
+GSTabBarReservedHeight(NSWindow *window)
 {
   GSWindowTabbingState *state;
   GSTheme *theme;
@@ -144,7 +151,7 @@ GSTabBarReservedHeight (NSWindow *window)
     {
       return 0.0;
     }
-  state = GSTabState (window, NO);
+  state = GSTabState(window, NO);
   if (state == nil || state->group == nil || [state->group isTabBarVisible] == NO)
     {
       return 0.0;
@@ -158,15 +165,15 @@ GSTabBarReservedHeight (NSWindow *window)
 }
 
 NSView *
-GSWindowTabBarViewForWindow (NSWindow *window)
+GSWindowTabBarViewForWindow(NSWindow *window)
 {
   GSWindowTabbingState *state;
 
-  if (GSTabClassesAreOurs () == NO)
+  if (GSTabClassesAreOurs() == NO)
     {
       return [GSWindowTabbingState gsTabBarViewForWindow: window];
     }
-  state = (states != NULL) ? GSTabState (window, NO) : nil;
+  state = (states != NULL) ? GSTabState(window, NO) : nil;
 
   if (state == nil || state->group == nil || [state->group isTabBarVisible] == NO)
     {
@@ -179,9 +186,9 @@ GSWindowTabBarViewForWindow (NSWindow *window)
    again: the window keeps its frame, and the content gives up or takes
    back the bar's row. */
 static void
-GSTabUpdateBar (NSWindow *window)
+GSTabUpdateBar(NSWindow *window)
 {
-  GSWindowTabbingState *state = GSTabState (window, NO);
+  GSWindowTabbingState *state = GSTabState(window, NO);
   NSView *decoration = [window _windowView];
   BOOL visible = (state != nil && state->group != nil
                   && [state->group isTabBarVisible]);
@@ -217,9 +224,9 @@ GSTabUpdateBar (NSWindow *window)
    An inherited method is overridden in cls rather than changed in its
    superclass. */
 static void
-GSTabHook (Class cls, SEL selector, IMP imp, IMP *original)
+GSTabHook(Class cls, SEL selector, IMP imp, IMP *original)
 {
-  Method method = class_getInstanceMethod (cls, selector);
+  Method method = class_getInstanceMethod(cls, selector);
 
   if (method == NULL)
     {
@@ -227,31 +234,31 @@ GSTabHook (Class cls, SEL selector, IMP imp, IMP *original)
       return;
     }
   *original = method_getImplementation (method);
-  if (class_addMethod (cls, selector, imp, method_getTypeEncoding (method)) == NO)
+  if (class_addMethod(cls, selector, imp, method_getTypeEncoding(method)) == NO)
     {
-      method_setImplementation (method, imp);
+      method_setImplementation(method, imp);
     }
 }
 
 /* Adds donor's methods to target where target has none of that name. */
 static void
-GSTabAddMethods (Class donor, Class target)
+GSTabAddMethods(Class donor, Class target)
 {
   unsigned int count = 0;
   unsigned int i;
-  Method *methods = class_copyMethodList (donor, &count);
+  Method *methods = class_copyMethodList(donor, &count);
 
   for (i = 0; i < count; i++)
     {
-      SEL selector = method_getName (methods[i]);
+      SEL selector = method_getName(methods[i]);
 
-      if (class_getInstanceMethod (target, selector) == NULL)
+      if (class_getInstanceMethod(target, selector) == NULL)
         {
-          class_addMethod (target, selector, method_getImplementation (methods[i]),
-                           method_getTypeEncoding (methods[i]));
+          class_addMethod(target, selector, method_getImplementation(methods[i]),
+                           method_getTypeEncoding(methods[i]));
         }
     }
-  free (methods);
+  free(methods);
 }
 
 
@@ -301,36 +308,36 @@ GSTabAddMethods (Class donor, Class target)
 
 - (NSWindowTabbingMode) tabbingMode
 {
-  GSWindowTabbingState *state = GSTabState (WINDOW, NO);
+  GSWindowTabbingState *state = GSTabState(WINDOW, NO);
 
   return (state != nil) ? state->mode : NSWindowTabbingModeAutomatic;
 }
 
 - (void) setTabbingMode: (NSWindowTabbingMode)mode
 {
-  GSTabState (WINDOW, YES)->mode = mode;
+  GSTabState(WINDOW, YES)->mode = mode;
 }
 
 /* By default the window's class: windows of one kind tab together. */
 - (NSWindowTabbingIdentifier) tabbingIdentifier
 {
-  GSWindowTabbingState *state = GSTabState (WINDOW, NO);
+  GSWindowTabbingState *state = GSTabState(WINDOW, NO);
 
   if (state != nil && state->identifier != nil)
     {
       return state->identifier;
     }
-  return NSStringFromClass ([self class]);
+  return NSStringFromClass([self class]);
 }
 
 - (void) setTabbingIdentifier: (NSWindowTabbingIdentifier)identifier
 {
-  ASSIGNCOPY (GSTabState (WINDOW, YES)->identifier, identifier);
+  ASSIGNCOPY(GSTabState(WINDOW, YES)->identifier, identifier);
 }
 
 - (NSWindowTabGroup *) tabGroup
 {
-  GSWindowTabbingState *state = GSTabState (WINDOW, YES);
+  GSWindowTabbingState *state = GSTabState(WINDOW, YES);
 
   if (state->group == nil)
     {
@@ -338,14 +345,14 @@ GSTabAddMethods (Class donor, Class target)
                                   initWithIdentifier: [WINDOW tabbingIdentifier]];
 
       [group addWindow: WINDOW];
-      RELEASE (group);
+      RELEASE(group);
     }
   return state->group;
 }
 
 - (NSArray *) tabbedWindows
 {
-  GSWindowTabbingState *state = GSTabState (WINDOW, NO);
+  GSWindowTabbingState *state = GSTabState(WINDOW, NO);
 
   if (state == nil || state->group == nil || [[state->group windows] count] < 2)
     {
@@ -356,7 +363,7 @@ GSTabAddMethods (Class donor, Class target)
 
 - (NSWindowTab *) tab
 {
-  GSWindowTabbingState *state = GSTabState (WINDOW, YES);
+  GSWindowTabbingState *state = GSTabState(WINDOW, YES);
 
   if (state->tab == nil)
     {
@@ -382,7 +389,7 @@ GSTabAddMethods (Class donor, Class target)
     {
       index++;
     }
-  GSTabState (window, YES)->shown = YES;
+  GSTabState(window, YES)->shown = YES;
   [group insertWindow: window atIndex: index];
 }
 
@@ -429,9 +436,9 @@ GSTabAddMethods (Class donor, Class target)
   for (i = 0; i < [windows count]; i++)
     {
       NSWindow *window = [windows objectAtIndex: i];
-      GSWindowTabbingState *state = GSTabState (window, NO);
+      GSWindowTabbingState *state = GSTabState(window, NO);
 
-      if (window == WINDOW || GSWindowCanBeTabbed (window) == NO
+      if (window == WINDOW || GSWindowCanBeTabbed(window) == NO
         || [[window tabbingIdentifier] isEqual: identifier] == NO
         || [[group windows] indexOfObjectIdenticalTo: window] != NSNotFound)
         {
@@ -476,19 +483,19 @@ GSTabAddMethods (Class donor, Class target)
 
 - (void) gsTabGroupDidChange
 {
-  GSTabUpdateBar (WINDOW);
+  GSTabUpdateBar(WINDOW);
 }
 
 - (NSWindowTabGroup *) gsTabGroup
 {
-  GSWindowTabbingState *state = GSTabState (WINDOW, NO);
+  GSWindowTabbingState *state = GSTabState(WINDOW, NO);
 
   return (state != nil) ? state->group : nil;
 }
 
 - (void) gsSetTabGroup: (NSWindowTabGroup *)group
 {
-  ASSIGN (GSTabState (WINDOW, YES)->group, group);
+  ASSIGN(GSTabState(WINDOW, YES)->group, group);
 }
 
 @end
@@ -512,12 +519,12 @@ static IMP originalFrameRectForContentRect;
 /* The window a new window ordered in for the first time joins, if any:
    the "+" button's window, or with automatic tabbing the key window. */
 static NSWindow *
-GSTabWindowToJoin (NSWindow *window)
+GSTabWindowToJoin(NSWindow *window)
 {
   NSWindowTabbingMode mode;
   NSWindow *key;
 
-  if (GSWindowCanBeTabbed (window) == NO)
+  if (GSWindowCanBeTabbed(window) == NO)
     {
       return nil;
     }
@@ -557,7 +564,7 @@ GSTabWindowToJoin (NSWindow *window)
           NSWindow *candidate = [ordered objectAtIndex: i];
 
           if (candidate != window && [candidate isVisible]
-            && GSWindowCanBeTabbed (candidate)
+            && GSWindowCanBeTabbed(candidate)
             && [[candidate tabbingIdentifier] isEqual: [window tabbingIdentifier]])
             {
               key = candidate;
@@ -565,7 +572,7 @@ GSTabWindowToJoin (NSWindow *window)
         }
     }
   if (key == nil || key == window || [key isVisible] == NO
-    || GSWindowCanBeTabbed (key) == NO
+    || GSWindowCanBeTabbed(key) == NO
     || [[key tabbingIdentifier] isEqual: [window tabbingIdentifier]] == NO)
     {
       return nil;
@@ -574,11 +581,11 @@ GSTabWindowToJoin (NSWindow *window)
 }
 
 static void
-GSTabOrderWindow (id self, SEL _cmd, NSWindowOrderingMode place, NSInteger other)
+GSTabOrderWindow(id self, SEL _cmd, NSWindowOrderingMode place, NSInteger other)
 {
   if (internalOrdering == 0 && place != NSWindowOut)
     {
-      GSWindowTabbingState *state = GSTabState (WINDOW, NO);
+      GSWindowTabbingState *state = GSTabState(WINDOW, NO);
       NSWindowTabGroup *group = (state != nil) ? state->group : nil;
 
       /* A hidden tab ordered in (the Windows menu, makeKeyAndOrderFront:)
@@ -591,9 +598,9 @@ GSTabOrderWindow (id self, SEL _cmd, NSWindowOrderingMode place, NSInteger other
         }
       if ((state == nil || state->shown == NO) && [WINDOW isVisible] == NO)
         {
-          NSWindow *join = GSTabWindowToJoin (WINDOW);
+          NSWindow *join = GSTabWindowToJoin(WINDOW);
 
-          GSTabState (WINDOW, YES)->shown = YES;
+          GSTabState(WINDOW, YES)->shown = YES;
           if (join != nil)
             {
               [join addTabbedWindow: WINDOW ordered: NSWindowAbove];
@@ -603,15 +610,15 @@ GSTabOrderWindow (id self, SEL _cmd, NSWindowOrderingMode place, NSInteger other
     }
   if (place != NSWindowOut)
     {
-      GSTabState (WINDOW, YES)->shown = YES;
+      GSTabState(WINDOW, YES)->shown = YES;
     }
-  ((void (*)(id, SEL, NSWindowOrderingMode, NSInteger))originalOrderWindow) (self, _cmd, place, other);
+  ((void(*)(id, SEL, NSWindowOrderingMode, NSInteger))originalOrderWindow) (self, _cmd, place, other);
 }
 
 static void
-GSTabRedrawBar (NSWindow *window)
+GSTabRedrawBar(NSWindow *window)
 {
-  GSWindowTabbingState *state = GSTabState (window, NO);
+  GSWindowTabbingState *state = GSTabState(window, NO);
   NSArray *windows;
   NSUInteger i;
 
@@ -623,7 +630,7 @@ GSTabRedrawBar (NSWindow *window)
   windows = [state->group windows];
   for (i = 0; i < [windows count]; i++)
     {
-      GSWindowTabbingState *other = GSTabState ([windows objectAtIndex: i], NO);
+      GSWindowTabbingState *other = GSTabState([windows objectAtIndex: i], NO);
 
       if (other != nil && other->barView != nil)
         {
@@ -633,31 +640,31 @@ GSTabRedrawBar (NSWindow *window)
 }
 
 static void
-GSTabSetTitle (id self, SEL _cmd, NSString *title)
+GSTabSetTitle(id self, SEL _cmd, NSString *title)
 {
-  ((void (*)(id, SEL, NSString *))originalSetTitle) (self, _cmd, title);
-  GSTabRedrawBar (WINDOW);
+  ((void(*)(id, SEL, NSString *))originalSetTitle) (self, _cmd, title);
+  GSTabRedrawBar(WINDOW);
 }
 
 static void
-GSTabSetTitleWithRepresentedFilename (id self, SEL _cmd, NSString *filename)
+GSTabSetTitleWithRepresentedFilename(id self, SEL _cmd, NSString *filename)
 {
-  ((void (*)(id, SEL, NSString *))originalSetTitleWithRepresentedFilename) (self, _cmd, filename);
-  GSTabRedrawBar (WINDOW);
+  ((void(*)(id, SEL, NSString *))originalSetTitleWithRepresentedFilename) (self, _cmd, filename);
+  GSTabRedrawBar(WINDOW);
 }
 
 static void
-GSTabSetDocumentEdited (id self, SEL _cmd, BOOL flag)
+GSTabSetDocumentEdited(id self, SEL _cmd, BOOL flag)
 {
-  ((void (*)(id, SEL, BOOL))originalSetDocumentEdited) (self, _cmd, flag);
-  GSTabRedrawBar (WINDOW);
+  ((void(*)(id, SEL, BOOL))originalSetDocumentEdited) (self, _cmd, flag);
+  GSTabRedrawBar(WINDOW);
 }
 
 /* Ctrl+Tab and Ctrl+Page Down select the next tab, Ctrl+Shift+Tab and
    Ctrl+Page Up the previous one, as in GNOME's apps, while the window is
    in a group with other tabs. YES if the event was one of them. */
 static BOOL
-GSTabHandleShortcut (NSWindow *window, NSEvent *event)
+GSTabHandleShortcut(NSWindow *window, NSEvent *event)
 {
   NSUInteger flags;
   NSString *characters;
@@ -700,24 +707,24 @@ GSTabHandleShortcut (NSWindow *window, NSEvent *event)
    shortcuts are taken here, ahead of a text view (which would insert a
    tab or scroll) and of the window's own Ctrl+Tab key view loop. */
 static BOOL
-GSTabPerformKeyEquivalent (id self, SEL _cmd, NSEvent *event)
+GSTabPerformKeyEquivalent(id self, SEL _cmd, NSEvent *event)
 {
-  if (GSTabHandleShortcut (WINDOW, event))
+  if (GSTabHandleShortcut(WINDOW, event))
     {
       return YES;
     }
-  return ((BOOL (*)(id, SEL, NSEvent *))originalPerformKeyEquivalent) (self, _cmd, event);
+  return ((BOOL(*)(id, SEL, NSEvent *))originalPerformKeyEquivalent) (self, _cmd, event);
 }
 
 /* And here, for a key-down sent to the window directly. */
 static void
-GSTabSendEvent (id self, SEL _cmd, NSEvent *event)
+GSTabSendEvent(id self, SEL _cmd, NSEvent *event)
 {
-  if (GSTabHandleShortcut (WINDOW, event))
+  if (GSTabHandleShortcut(WINDOW, event))
     {
       return;
     }
-  ((void (*)(id, SEL, NSEvent *))originalSendEvent) (self, _cmd, event);
+  ((void(*)(id, SEL, NSEvent *))originalSendEvent) (self, _cmd, event);
 }
 
 /* Closing the selected tab shows its neighbour first, so the app never
@@ -727,35 +734,35 @@ GSTabSendEvent (id self, SEL _cmd, NSEvent *event)
    -applicationShouldTerminateAfterLastWindowClosed: says YES). The
    window leaves its group before it closes. */
 static void
-GSTabClose (id self, SEL _cmd)
+GSTabClose(id self, SEL _cmd)
 {
-  GSWindowTabbingState *state = GSTabState (WINDOW, NO);
+  GSWindowTabbingState *state = GSTabState(WINDOW, NO);
   NSWindowTabGroup *group = (state != nil) ? state->group : nil;
 
   if (group != nil && [[group windows] count] > 1)
     {
-      RETAIN (group);
+      RETAIN(group);
       [group removeWindow: WINDOW];
-      RELEASE (group);
+      RELEASE(group);
     }
-  ((void (*)(id, SEL))originalClose) (self, _cmd);
+  ((void(*)(id, SEL))originalClose) (self, _cmd);
 }
 
 static BOOL
-GSTabValidateUserInterfaceItem (id self, SEL _cmd, id item)
+GSTabValidateUserInterfaceItem(id self, SEL _cmd, id item)
 {
   SEL action = [item action];
   NSUInteger count = [[WINDOW tabbedWindows] count];
 
-  if (sel_isEqual (action, @selector(selectNextTab:))
-    || sel_isEqual (action, @selector(selectPreviousTab:))
-    || sel_isEqual (action, @selector(moveTabToNewWindow:)))
+  if (sel_isEqual(action, @selector(selectNextTab:))
+    || sel_isEqual(action, @selector(selectPreviousTab:))
+    || sel_isEqual(action, @selector(moveTabToNewWindow:)))
     {
       return count > 1;
     }
-  if (sel_isEqual (action, @selector(toggleTabBar:)))
+  if (sel_isEqual(action, @selector(toggleTabBar:)))
     {
-      if (GSWindowCanBeTabbed (WINDOW) == NO)
+      if (GSWindowCanBeTabbed(WINDOW) == NO)
         {
           return NO;
         }
@@ -767,12 +774,12 @@ GSTabValidateUserInterfaceItem (id self, SEL _cmd, id item)
         }
       return YES;
     }
-  if (sel_isEqual (action, @selector(mergeAllWindows:)))
+  if (sel_isEqual(action, @selector(mergeAllWindows:)))
     {
       NSArray *windows = [NSApp windows];
       NSUInteger i;
 
-      if (GSWindowCanBeTabbed (WINDOW) == NO)
+      if (GSWindowCanBeTabbed(WINDOW) == NO)
         {
           return NO;
         }
@@ -780,7 +787,7 @@ GSTabValidateUserInterfaceItem (id self, SEL _cmd, id item)
         {
           NSWindow *window = [windows objectAtIndex: i];
 
-          if (window != WINDOW && GSWindowCanBeTabbed (window)
+          if (window != WINDOW && GSWindowCanBeTabbed(window)
             && [[window tabbingIdentifier] isEqual: [WINDOW tabbingIdentifier]]
             && [[[WINDOW tabGroup] windows] indexOfObjectIdenticalTo: window] == NSNotFound
             && [window isVisible])
@@ -790,63 +797,63 @@ GSTabValidateUserInterfaceItem (id self, SEL _cmd, id item)
         }
       return NO;
     }
-  return ((BOOL (*)(id, SEL, id))originalValidateUserInterfaceItem) (self, _cmd, item);
+  return ((BOOL(*)(id, SEL, id))originalValidateUserInterfaceItem) (self, _cmd, item);
 }
 
 static void
-GSTabWindowDealloc (id self, SEL _cmd)
+GSTabWindowDealloc(id self, SEL _cmd)
 {
   if (newTabWindow == WINDOW)
     {
       newTabWindow = nil;
     }
-  NSMapRemove (states, self);
-  ((void (*)(id, SEL))originalWindowDealloc) (self, _cmd);
+  NSMapRemove(states, self);
+  ((void(*)(id, SEL))originalWindowDealloc) (self, _cmd);
 }
 
 /* After the decoration has laid out the title bar, menu bar and toolbar,
    the tab bar takes the top of what is left. */
 static void
-GSTabDecorationLayout (id self, SEL _cmd)
+GSTabDecorationLayout(id self, SEL _cmd)
 {
   NSWindow *window = [(NSView *)self window];
   CGFloat height;
   NSView *content;
   GSWindowTabbingState *state;
 
-  ((void (*)(id, SEL))originalDecorationLayout) (self, _cmd);
-  height = GSTabBarReservedHeight (window);
-  state = (window != nil) ? GSTabState (window, NO) : nil;
+  ((void(*)(id, SEL))originalDecorationLayout) (self, _cmd);
+  height = GSTabBarReservedHeight(window);
+  state = (window != nil) ? GSTabState(window, NO) : nil;
   content = [window contentView];
   if (height > 0.0 && state != nil && state->barView != nil
     && [content superview] == self)
     {
       NSRect frame = [content frame];
 
-      [state->barView setFrame: NSMakeRect (NSMinX (frame), NSMaxY (frame) - height,
-                                            NSWidth (frame), height)];
+      [state->barView setFrame: NSMakeRect(NSMinX(frame), NSMaxY(frame) - height,
+                                            NSWidth(frame), height)];
       frame.size.height -= height;
       [content setFrame: frame];
     }
 }
 
 static NSRect
-GSTabContentRectForFrameRect (id self, SEL _cmd, NSRect frame, NSUInteger style)
+GSTabContentRectForFrameRect(id self, SEL _cmd, NSRect frame, NSUInteger style)
 {
-  NSRect content = ((NSRect (*)(id, SEL, NSRect, NSUInteger))originalContentRectForFrameRect)
+  NSRect content = ((NSRect(*)(id, SEL, NSRect, NSUInteger))originalContentRectForFrameRect)
     (self, _cmd, frame, style);
 
-  content.size.height -= GSTabBarReservedHeight ([(NSView *)self window]);
+  content.size.height -= GSTabBarReservedHeight([(NSView *)self window]);
   return content;
 }
 
 static NSRect
-GSTabFrameRectForContentRect (id self, SEL _cmd, NSRect content, NSUInteger style)
+GSTabFrameRectForContentRect(id self, SEL _cmd, NSRect content, NSUInteger style)
 {
-  CGFloat height = GSTabBarReservedHeight ([(NSView *)self window]);
+  CGFloat height = GSTabBarReservedHeight([(NSView *)self window]);
 
   content.size.height += height;
-  return ((NSRect (*)(id, SEL, NSRect, NSUInteger))originalFrameRectForContentRect)
+  return ((NSRect(*)(id, SEL, NSRect, NSUInteger))originalFrameRectForContentRect)
     (self, _cmd, content, style);
 }
 
@@ -859,21 +866,21 @@ GSTabFrameRectForContentRect (id self, SEL _cmd, NSRect content, NSUInteger styl
 - (void) windowWillClose: (NSNotification *)notification
 {
   NSWindow *window = [notification object];
-  GSWindowTabbingState *state = GSTabState (window, NO);
+  GSWindowTabbingState *state = GSTabState(window, NO);
 
   if (state != nil && state->group != nil)
     {
-      NSWindowTabGroup *group = RETAIN (state->group);
+      NSWindowTabGroup *group = RETAIN(state->group);
 
       [group gsWindowWillLeave: window];
       [(id)window gsSetTabGroup: nil];
-      RELEASE (group);
+      RELEASE(group);
     }
 }
 @end
 
 void
-GSWindowTabbingSendNewWindowForTab (NSWindow *window)
+GSWindowTabbingSendNewWindowForTab(NSWindow *window)
 {
   newTabWindow = window;
   [NSApp sendAction: @selector(newWindowForTab:) to: nil from: window];
@@ -881,7 +888,7 @@ GSWindowTabbingSendNewWindowForTab (NSWindow *window)
 }
 
 BOOL
-GSWindowTabbingCanCreateNewTab (NSWindow *window)
+GSWindowTabbingCanCreateNewTab(NSWindow *window)
 {
   return [NSApp targetForAction: @selector(newWindowForTab:) to: nil from: window] != nil;
 }
@@ -889,7 +896,7 @@ GSWindowTabbingCanCreateNewTab (NSWindow *window)
 #endif /* GS_HAS_WINDOW_TABBING */
 
 BOOL
-GSWindowTabbingInstall (void)
+GSWindowTabbingInstall(void)
 {
 #ifdef GS_HAS_WINDOW_TABBING
   return NO;
@@ -902,7 +909,7 @@ GSWindowTabbingInstall (void)
     {
       return YES;
     }
-  if (GSTabClassesAreOurs () == NO)
+  if (GSTabClassesAreOurs() == NO)
     {
       return [GSWindowTabbingState gsInstallTabbing];
     }
@@ -912,34 +919,34 @@ GSWindowTabbingInstall (void)
       return NO;
     }
   installed = YES;
-  states = NSCreateMapTable (NSNonOwnedPointerMapKeyCallBacks,
+  states = NSCreateMapTable(NSNonOwnedPointerMapKeyCallBacks,
                              NSObjectMapValueCallBacks, 64);
 
-  GSTabAddMethods ([GSWindowTabbingWindowMethods class], window);
+  GSTabAddMethods([GSWindowTabbingWindowMethods class], window);
   /* The donor's instance methods become NSWindow's class methods. */
-  GSTabAddMethods ([GSWindowTabbingWindowClassMethods class], object_getClass (window));
-  GSWindowTabbingInstallThemeDefaults ();
+  GSTabAddMethods([GSWindowTabbingWindowClassMethods class], object_getClass(window));
+  GSWindowTabbingInstallThemeDefaults();
 
-  GSTabHook (window, @selector(orderWindow:relativeTo:),
+  GSTabHook(window, @selector(orderWindow:relativeTo:),
              (IMP)GSTabOrderWindow, &originalOrderWindow);
-  GSTabHook (window, @selector(setTitle:), (IMP)GSTabSetTitle, &originalSetTitle);
-  GSTabHook (window, @selector(setTitleWithRepresentedFilename:),
+  GSTabHook(window, @selector(setTitle:), (IMP)GSTabSetTitle, &originalSetTitle);
+  GSTabHook(window, @selector(setTitleWithRepresentedFilename:),
              (IMP)GSTabSetTitleWithRepresentedFilename,
              &originalSetTitleWithRepresentedFilename);
-  GSTabHook (window, @selector(setDocumentEdited:),
+  GSTabHook(window, @selector(setDocumentEdited:),
              (IMP)GSTabSetDocumentEdited, &originalSetDocumentEdited);
-  GSTabHook (window, @selector(sendEvent:), (IMP)GSTabSendEvent, &originalSendEvent);
-  GSTabHook (window, @selector(performKeyEquivalent:),
+  GSTabHook(window, @selector(sendEvent:), (IMP)GSTabSendEvent, &originalSendEvent);
+  GSTabHook(window, @selector(performKeyEquivalent:),
              (IMP)GSTabPerformKeyEquivalent, &originalPerformKeyEquivalent);
-  GSTabHook (window, @selector(close), (IMP)GSTabClose, &originalClose);
-  GSTabHook (window, @selector(validateUserInterfaceItem:),
+  GSTabHook(window, @selector(close), (IMP)GSTabClose, &originalClose);
+  GSTabHook(window, @selector(validateUserInterfaceItem:),
              (IMP)GSTabValidateUserInterfaceItem, &originalValidateUserInterfaceItem);
-  GSTabHook (window, @selector(dealloc), (IMP)GSTabWindowDealloc, &originalWindowDealloc);
-  GSTabHook (decoration, @selector(layout), (IMP)GSTabDecorationLayout,
+  GSTabHook(window, @selector(dealloc), (IMP)GSTabWindowDealloc, &originalWindowDealloc);
+  GSTabHook(decoration, @selector(layout), (IMP)GSTabDecorationLayout,
              &originalDecorationLayout);
-  GSTabHook (decoration, @selector(contentRectForFrameRect:styleMask:),
+  GSTabHook(decoration, @selector(contentRectForFrameRect:styleMask:),
              (IMP)GSTabContentRectForFrameRect, &originalContentRectForFrameRect);
-  GSTabHook (decoration, @selector(frameRectForContentRect:styleMask:),
+  GSTabHook(decoration, @selector(frameRectForContentRect:styleMask:),
              (IMP)GSTabFrameRectForContentRect, &originalFrameRectForContentRect);
 
   observer = [GSWindowTabbingObserver new];

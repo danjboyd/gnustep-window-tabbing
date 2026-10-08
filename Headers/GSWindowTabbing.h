@@ -3,6 +3,11 @@
 
    Copyright (C) 2026 Daniel Boyd
 
+   Author: Daniel Boyd <danieljboyd@icloud.com>
+   Date: 2026
+
+   This file is part of the GNUstep GUI Library.
+
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
@@ -15,7 +20,9 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with this library; see the file COPYING.LIB.
-   If not, see <http://www.gnu.org/licenses/>.
+   If not, see <http://www.gnu.org/licenses/> or write to the
+   Free Software Foundation, 51 Franklin Street, Fifth Floor,
+   Boston, MA 02110-1301, USA.
 */
 
 #ifndef _GSWindowTabbing_h_INCLUDE
@@ -189,14 +196,14 @@ typedef unsigned int GSWindowTabState;
    -activate, an app from main() after [NSApplication sharedApplication]
    (GSTheme loads the user's theme, which may need the backend). Later
    calls do nothing. Returns NO if libs-gui already has window tabbing. */
-GS_EXPORT BOOL GSWindowTabbingInstall (void);
+GS_EXPORT BOOL GSWindowTabbingInstall(void);
 
 /* The tab bar's view for a window, for a theme whose placement is
    GSWindowTabBarInTitleBar; nil when the bar is hidden. */
-GS_EXPORT NSView *GSWindowTabBarViewForWindow (NSWindow *window);
+GS_EXPORT NSView *GSWindowTabBarViewForWindow(NSWindow *window);
 
 /* title shortened with an ellipsis at its end to fit width. */
-GS_EXPORT NSString *GSWindowTabFittedTitle (NSString *title,
+GS_EXPORT NSString *GSWindowTabFittedTitle(NSString *title,
                                             NSDictionary *attributes,
                                             CGFloat width);
 
