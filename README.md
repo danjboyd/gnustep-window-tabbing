@@ -166,8 +166,11 @@ Apple's names and behaviour, a subset:
 - `NSWindowTabGroup`: `identifier`, `windows`, `selectedWindow` (settable),
   `tabBarVisible`, `overviewVisible` (always NO), `-addWindow:`,
   `-insertWindow:atIndex:`, `-removeWindow:`.
-- `-newWindowForTab:` is sent along the responder chain by the bar's "+"
-  button, shown only when something responds; the window the responder
+- `-newWindowForTab:` is sent along the responder chain of the bar's
+  window, key or not (its first responder up to the window, its delegate,
+  window controller and document, then NSApp, its delegate and the
+  document controller), by the bar's "+" button, shown only when
+  something there responds; the window the responder
   orders in for the first time joins the asking window's group.
 
 Behaviour:

@@ -491,17 +491,101 @@ static NSWindow *newTabWindow = nil;
   return state->barView;
 }
 
+/* What the "+" button sends -newWindowForTab: to: the first object in
+   this window's responder chain that takes it, whether or not the window
+   is key: the button belongs to this window.  The order is Apple's for
+   one window's part of an action's search: the first
+   responder up to the window, the window's delegate, its window
+   controller and document, then the application, its delegate and the
+   document controller.  -[NSApplication targetForAction:to:from:]
+   searches only the key and main windows' chains (libs-gui takes the
+   sender's window only for toolbar items), so a group not in the key
+   window had no "+", or one that asked the key window's delegate. */
+- (id) _tabbingNewTabTarget
+{
+  SEL action = @selector(newWindowForTab:);
+  NSResponder *responder = [self firstResponder];
+  NSDocumentController *documents;
+  id candidate;
+
+  if (responder == nil)
+    {
+      responder = self;
+    }
+  while (responder != nil)
+    {
+      if ([responder respondsToSelector: action])
+        {
+          return responder;
+        }
+      if (responder == self)
+        {
+          break;
+        }
+      responder = [responder nextResponder];
+    }
+  if ([self respondsToSelector: action])
+    {
+      return self;
+    }
+  candidate = [self delegate];
+  if ([candidate respondsToSelector: action])
+    {
+      return candidate;
+    }
+  candidate = [self windowController];
+  if ([candidate respondsToSelector: action])
+    {
+      return candidate;
+    }
+  documents = [NSDocumentController sharedDocumentController];
+  if ([[documents documentClassNames] count] > 0)
+    {
+      candidate = [documents documentForWindow: self];
+      if ([candidate respondsToSelector: action])
+        {
+          return candidate;
+        }
+    }
+  if ([NSApp respondsToSelector: action])
+    {
+      return NSApp;
+    }
+  candidate = [NSApp delegate];
+  if ([candidate respondsToSelector: action])
+    {
+      return candidate;
+    }
+  for (responder = [NSApp nextResponder]; responder != nil;
+       responder = [responder nextResponder])
+    {
+      if ([responder respondsToSelector: action])
+        {
+          return responder;
+        }
+    }
+  if ([documents respondsToSelector: action])
+    {
+      return documents;
+    }
+  return nil;
+}
+
 - (BOOL) _tabbingCanCreateNewTab
 {
-  return [NSApp targetForAction: @selector(newWindowForTab:)
-                             to: nil
-                           from: self] != nil;
+  return [self _tabbingNewTabTarget] != nil;
 }
 
 - (void) _tabbingCreateNewTab
 {
+  id target = [self _tabbingNewTabTarget];
+
+  if (target == nil)
+    {
+      return;
+    }
   newTabWindow = self;
-  [NSApp sendAction: @selector(newWindowForTab:) to: nil from: self];
+  [NSApp sendAction: @selector(newWindowForTab:) to: target from: self];
   newTabWindow = nil;
 }
 

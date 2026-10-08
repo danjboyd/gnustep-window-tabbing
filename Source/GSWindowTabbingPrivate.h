@@ -152,8 +152,10 @@ void GSWindowTabbingDidShowMaximized(NSWindow *window, BOOL maximized);
 - (CGFloat) _tabBarReservedHeight;
 /* The tab bar's view while the bar is shown, else nil. */
 - (GSWindowTabBarView *) _tabBarView;
-/* The tab bar's "+" button: is there something to answer
-   -newWindowForTab:, and ask it. */
+/* The tab bar's "+" button: what answers -newWindowForTab: for this
+   window, key or not (nil for nothing), is there something, and ask
+   it. */
+- (id) _tabbingNewTabTarget;
 - (BOOL) _tabbingCanCreateNewTab;
 - (void) _tabbingCreateNewTab;
 /* A tab dragged out of the bar: the window leaves its group as a window

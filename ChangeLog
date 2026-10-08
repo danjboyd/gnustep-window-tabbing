@@ -1,5 +1,18 @@
 2026-10-08  Daniel Boyd  <danieljboyd@icloud.com>
 
+	* Source/GSWindowTabbingWindow.m ([NSWindow -_tabbingNewTabTarget]):
+	New: what answers -newWindowForTab: in this window's own responder
+	chain, key or not.
+	([NSWindow -_tabbingCanCreateNewTab], [NSWindow
+	-_tabbingCreateNewTab]): Use it, instead of NSApp's search of the
+	key and main windows.
+	* Source/GSWindowTabbingPrivate.h: Declare it.
+	* README.md: Say so.
+	* Tests/gui/NSWindow/tabbing_glue.m: The "+" of a window that isn't
+	key.
+
+2026-10-08  Daniel Boyd  <danieljboyd@icloud.com>
+
 	* Source/GSWindowTabBarView.m ([GSWindowTabBarView
 	-observeKeyAndMainOfWindow:], [GSWindowTabBarView
 	-windowKeyOrMainDidChange:]): New: the bar is laid out and drawn

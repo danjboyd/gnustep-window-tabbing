@@ -132,6 +132,23 @@ maximizedAtoms (Display *display, NSWindow *window)
 }
 @end
 
+/* A window's delegate that answers -newWindowForTab:, counting. */
+@interface TabDelegate : NSObject
+{
+@public
+  int requests;
+  id sender;
+}
+@end
+
+@implementation TabDelegate
+- (void) newWindowForTab: (id)from
+{
+  requests++;
+  sender = from;
+}
+@end
+
 static NSWindow *
 makeWindow (NSString *title, NSWindowTabbingMode mode)
 {
@@ -359,6 +376,60 @@ main (int argc, char **argv)
       }
     }
   END_SET ("window tabbing on NSWindow")
+
+  START_SET ("the \"+\" button of a window that isn't key")
+    {
+      NSWindow *x1, *x2, *y1, *y2;
+      TabDelegate *xDelegate = [TabDelegate new];
+      TabDelegate *yDelegate = [TabDelegate new];
+      GSWindowTabBarView *xBar, *yBar;
+
+      [NSApp setDelegate: nil];
+      x1 = makeWindow (@"X1", NSWindowTabbingModeAutomatic);
+      x2 = makeWindow (@"X2", NSWindowTabbingModeAutomatic);
+      y1 = makeWindow (@"Y1", NSWindowTabbingModeAutomatic);
+      y2 = makeWindow (@"Y2", NSWindowTabbingModeAutomatic);
+      [x1 setTabbingIdentifier: @"x"];
+      [x2 setTabbingIdentifier: @"x"];
+      [y1 setTabbingIdentifier: @"y"];
+      [y2 setTabbingIdentifier: @"y"];
+      [x1 setFrameOrigin: NSMakePoint (50, 500)];
+      [x1 makeKeyAndOrderFront: nil];
+      [x1 addTabbedWindow: x2 ordered: NSWindowAbove];
+      [y1 makeKeyAndOrderFront: nil];
+      [y1 addTabbedWindow: y2 ordered: NSWindowAbove];
+      [x2 setDelegate: (id)xDelegate];
+      [y2 makeKeyAndOrderFront: nil];
+      spin ();
+      /* As the window system's focus change would, which doesn't move
+         without a window manager. */
+      [x2 resignKeyWindow];
+      [y2 becomeKeyWindow];
+      xBar = (GSWindowTabBarView *)GSWindowTabBarViewForWindow (x2);
+      yBar = (GSWindowTabBarView *)GSWindowTabBarViewForWindow (y2);
+      PASS ([x2 isVisible] && [x2 isKeyWindow] == NO && [y2 isKeyWindow],
+            "two groups; the one whose window answers -newWindowForTab: isn't key");
+      PASS (NSIsEmptyRect ([xBar newTabButtonRect]) == NO,
+            "its window's delegate gives it a \"+\" all the same");
+      PASS (NSIsEmptyRect ([yBar newTabButtonRect]),
+            "the key window, whose chain doesn't answer, has none");
+      [y2 setDelegate: (id)yDelegate];
+      PASS (NSIsEmptyRect ([yBar newTabButtonRect]) == NO, "until its delegate does");
+      clickBar (x2, NSMakePoint (NSMidX ([xBar newTabButtonRect]),
+                                 NSMidY ([xBar newTabButtonRect])));
+      spin ();
+      PASS (xDelegate->requests == 1 && yDelegate->requests == 0,
+            "a click on the \"+\" of the window that isn't key asks that window's delegate");
+      PASS (xDelegate->sender == x2, "from that window");
+      [x2 setDelegate: nil];
+      [y2 setDelegate: nil];
+      [x1 close];
+      [x2 close];
+      [y1 close];
+      [y2 close];
+      spin ();
+    }
+  END_SET ("the \"+\" button of a window that isn't key")
 
   START_SET ("in-window menu bars")
     {
