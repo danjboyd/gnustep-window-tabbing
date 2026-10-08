@@ -103,6 +103,7 @@ GSWindowTabPressWasLost(NSEvent *event)
 
 @interface GSWindowTabBarView (Private)
 - (void) updateToolTips;
+- (void) observeKeyAndMainOfWindow: (NSWindow *)window;
 @end
 
 @implementation GSWindowTabBarView
@@ -116,8 +117,40 @@ GSWindowTabPressWasLost(NSEvent *event)
       _pressedTab = -1;
       _dropGapSlot = -1;
       [self setAutoresizingMask: NSViewWidthSizable | NSViewMinYMargin];
+      [self observeKeyAndMainOfWindow: window];
     }
   return self;
+}
+
+- (void) dealloc
+{
+  [[NSNotificationCenter defaultCenter] removeObserver: self];
+  [super dealloc];
+}
+
+/* The bar draws the window's key state, and whether there is a "+"
+   button can change with it (the responder chain that answers
+   -newWindowForTab:), so it is laid out and drawn again whenever the
+   window becomes or stops being key or main.  A tab selected while its
+   window wasn't key yet was otherwise drawn as it was then: no "+", and
+   tabs as wide as before, where clicks found other widths. */
+- (void) observeKeyAndMainOfWindow: (NSWindow *)window
+{
+  NSNotificationCenter *center = [NSNotificationCenter defaultCenter];
+
+  [center addObserver: self selector: @selector(windowKeyOrMainDidChange:)
+                 name: NSWindowDidBecomeKeyNotification object: window];
+  [center addObserver: self selector: @selector(windowKeyOrMainDidChange:)
+                 name: NSWindowDidResignKeyNotification object: window];
+  [center addObserver: self selector: @selector(windowKeyOrMainDidChange:)
+                 name: NSWindowDidBecomeMainNotification object: window];
+  [center addObserver: self selector: @selector(windowKeyOrMainDidChange:)
+                 name: NSWindowDidResignMainNotification object: window];
+}
+
+- (void) windowKeyOrMainDidChange: (NSNotification *)notification
+{
+  [self tabsDidChange];
 }
 
 - (BOOL) isFlipped

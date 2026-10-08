@@ -13,6 +13,7 @@
 */
 
 #import "Testing.h"
+#import <objc/runtime.h>
 #import <AppKit/AppKit.h>
 #import <GNUstepGUI/GSDisplayServer.h>
 #import "GSWindowTabbing.h"
@@ -30,6 +31,22 @@ makeWindow (NSString *title)
   [w setTabbingMode: NSWindowTabbingModePreferred];
   [w setReleasedWhenClosed: NO];
   return w;
+}
+
+/* Counts the bar backgrounds drawn for one window. */
+typedef void (*BackgroundIMP)(id, SEL, NSRect, NSWindow *);
+static BackgroundIMP originalBackground;
+static NSWindow *countedWindow;
+static NSUInteger backgroundDraws;
+
+static void
+countingBackground (id theme, SEL sel, NSRect rect, NSWindow *window)
+{
+  if (window == countedWindow)
+    {
+      backgroundDraws++;
+    }
+  originalBackground (theme, sel, rect, window);
 }
 
 /* Hands the app the display's events for a moment, as -run would. */
@@ -121,6 +138,33 @@ main (int argc, char **argv)
       spin ();
       PASS (([bar stateForTabAtIndex: 2] & GSWindowTabHovered) == 0,
             "moved off the bar, no tab is hovered");
+
+      /* The bar draws the window's key state: it is drawn again when the
+         window stops or starts being key.  (-resignKeyWindow and
+         -becomeKeyWindow are what the window system's focus change
+         calls; without a window manager, focus doesn't move here.) */
+      {
+        Method method = class_getInstanceMethod ([GSTheme class],
+          @selector(drawWindowTabBarBackgroundInRect:window:));
+        NSUInteger before;
+
+        countedWindow = a;
+        originalBackground = (BackgroundIMP)method_setImplementation (method,
+          (IMP)countingBackground);
+        [a displayIfNeeded];
+        PASS ([a isKeyWindow] && [bar needsDisplay] == NO, "the key window's bar is drawn");
+        before = backgroundDraws;
+        [a resignKeyWindow];
+        [a displayIfNeeded];
+        PASS ([a isKeyWindow] == NO && backgroundDraws > before,
+              "the window stops being key: its bar is drawn again");
+        before = backgroundDraws;
+        [a becomeKeyWindow];
+        [a displayIfNeeded];
+        PASS ([a isKeyWindow] && backgroundDraws > before,
+              "and when it is key again");
+        method_setImplementation (method, (IMP)originalBackground);
+      }
     }
   END_SET ("hover")
 
