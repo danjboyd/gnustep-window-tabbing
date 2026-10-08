@@ -47,9 +47,15 @@
 - (BOOL) isKeyWindow;
 - (BOOL) isDocumentEdited;
 - (NSWindowTabbingIdentifier) tabbingIdentifier;
-/* Puts the window on screen at frame, key if makeKey, as the group's
-   selected window. */
-- (void) _tabbingShowWithFrame: (NSRect)frame makeKey: (BOOL)makeKey;
+/* Whether the window manager has the window maximized (on Windows, the
+   window is zoomed); NO where that can't be told.  GNUstep's own zoomed
+   state is its frame, which the group carries anyway. */
+- (BOOL) _tabbingIsMaximized;
+/* Puts the window on screen at frame, maximized or not, key if makeKey,
+   as the group's selected window. */
+- (void) _tabbingShowWithFrame: (NSRect)frame
+                     maximized: (BOOL)maximized
+                       makeKey: (BOOL)makeKey;
 /* Takes it off screen while it stays in its group. */
 - (void) _tabbingHide;
 /* The group's windows, selection or bar changed: redraw the bar and
@@ -108,6 +114,15 @@ GSWindowTabbingState *GSWindowTabbingStateForWindow(NSWindow *window,
                                                     BOOL create);
 /* Forgets window's state (it is being deallocated). */
 void GSWindowTabbingForgetWindow(NSWindow *window);
+
+/* The window manager's maximized state, from GSWindowTabbingInstall.m
+   (upstream: the display server's).  GSWindowTabbingWindowIsMaximized
+   sets *known to NO where it can't be told.  WillShow is called on a
+   window the group is about to show (ordered out), DidShow once it is
+   on screen. */
+BOOL GSWindowTabbingWindowIsMaximized(NSWindow *window, BOOL *known);
+void GSWindowTabbingWillShowMaximized(NSWindow *window, BOOL maximized);
+void GSWindowTabbingDidShowMaximized(NSWindow *window, BOOL maximized);
 
 /* NSWindow's private tabbing methods (GSWindowTabbingWindow.m).  The
    methods NSWindow already has call these: upstream each call is a line

@@ -125,6 +125,7 @@ main (int argc, char **argv)
             "closing the selected tab selects its right-hand neighbour");
       PASS (NSEqualRects (c->frame, NSMakeRect (70, 70, 330, 230)) && c->key,
             "which takes its place, frame and key status");
+      PASS (c->maximized == NO, "not maximized, as the closed one wasn't");
       [group _windowWillLeave: c];
       PASS ([group selectedWindow] == (id)a && a->visible,
             "closing the last tab selects the one before it");
@@ -323,6 +324,29 @@ main (int argc, char **argv)
       PASS (GSWindowTabScrollToShow (0, 600, 100, 250, 400) == 400, "never past the end");
     }
   END_SET ("scrolling to show a tab")
+
+  START_SET ("maximized windows")
+    {
+      FakeWindow *a = [FakeWindow named: @"A"];
+      FakeWindow *b = [FakeWindow named: @"B"];
+      FakeWindow *c = [FakeWindow named: @"C"];
+      NSWindowTabGroup *group = groupWith (a);
+
+      [group addWindow: (NSWindow *)b];
+      [group addWindow: (NSWindow *)c];
+      [group setSelectedWindow: (NSWindow *)a];
+      a->maximized = YES;
+      [group setSelectedWindow: (NSWindow *)b];
+      PASS (b->maximized, "a tab selected in place of a maximized window is maximized");
+      b->maximized = NO;
+      [group setSelectedWindow: (NSWindow *)a];
+      PASS (a->maximized == NO, "and one selected in place of a window that isn't, isn't");
+      a->maximized = YES;
+      [group _windowWillLeave: a];
+      PASS ([group selectedWindow] == (id)b && b->maximized,
+            "a maximized tab closed: its neighbour takes its place maximized");
+    }
+  END_SET ("maximized windows")
 
   [pool release];
   return 0;

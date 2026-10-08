@@ -44,6 +44,7 @@
 
 #import "GSWindowTabbingPrivate.h"
 #import "GSWindowTabBarView.h"
+#import <GNUstepGUI/GSDisplayServer.h>
 #import <objc/runtime.h>
 
 /* Which loaded object holds an address: dladdr() where there is one,
@@ -54,6 +55,17 @@
 #include <windows.h>
 #else
 #include <dlfcn.h>
+#endif
+
+/* X11's types, for the window manager's maximized state; its functions
+   are looked up at run time (libs-back's X11 server has loaded Xlib), so
+   nothing links against it. */
+#if !defined(_WIN32) && defined(__has_include)
+#if __has_include(<X11/Xlib.h>)
+#define GSWT_HAVE_X11 1
+#include <X11/Xlib.h>
+#include <X11/Xatom.h>
+#endif
 #endif
 
 #ifndef GS_HAS_WINDOW_TABBING
@@ -118,6 +130,190 @@ GSWindowTabbingForgetWindow(NSWindow *window)
     {
       NSMapRemove(states, window);
     }
+}
+
+/* The window manager's maximized state.  Upstream this belongs in the
+   display server (libs-back), next to its other window manager hints;
+   here it is done for libs-back's X11 and Windows servers directly.
+
+   X11: EWMH's _NET_WM_STATE_MAXIMIZED_VERT and _HORZ, read from the
+   window's _NET_WM_STATE.  A window the group is about to show is
+   withdrawn (ordered out), and the window manager reads _NET_WM_STATE
+   when it maps one, so the property itself is changed (EWMH's rule for
+   withdrawn windows).
+   Windows: IsZoomed(), and ShowWindow() once the window is shown. */
+
+#if defined(GSWT_HAVE_X11)
+typedef Atom (*GSWTInternAtom)(Display *, const char *, Bool);
+typedef int (*GSWTGetWindowProperty)(Display *, Window, Atom, long, long,
+  Bool, Atom, Atom *, int *, unsigned long *, unsigned long *,
+  unsigned char **);
+typedef int (*GSWTChangeProperty)(Display *, Window, Atom, Atom, int, int,
+  const unsigned char *, int);
+typedef int (*GSWTFree)(void *);
+
+static struct
+{
+  BOOL looked;
+  GSWTInternAtom internAtom;
+  GSWTGetWindowProperty getWindowProperty;
+  GSWTChangeProperty changeProperty;
+  GSWTFree free;
+} x11;
+
+/* The X display and window of window, or NO when it has none (not
+   libs-back's X11 server, or not created yet). */
+static BOOL
+GSWindowTabbingX11Window(NSWindow *window, Display **display, Window *xwindow)
+{
+  GSDisplayServer *server = GSServerForWindow(window);
+  Class x11Server = NSClassFromString(@"XGServer");
+
+  if (x11.looked == NO)
+    {
+      x11.looked = YES;
+      x11.internAtom = (GSWTInternAtom)dlsym(RTLD_DEFAULT, "XInternAtom");
+      x11.getWindowProperty
+        = (GSWTGetWindowProperty)dlsym(RTLD_DEFAULT, "XGetWindowProperty");
+      x11.changeProperty
+        = (GSWTChangeProperty)dlsym(RTLD_DEFAULT, "XChangeProperty");
+      x11.free = (GSWTFree)dlsym(RTLD_DEFAULT, "XFree");
+    }
+  if (x11.internAtom == NULL || x11.getWindowProperty == NULL
+    || x11.changeProperty == NULL || x11.free == NULL
+    || server == nil || x11Server == Nil
+    || [server isKindOfClass: x11Server] == NO
+    || [window windowNumber] <= 0)
+    {
+      return NO;
+    }
+  *display = (Display *)[server serverDevice];
+  *xwindow = (Window)(uintptr_t)[server windowDevice: [window windowNumber]];
+  return (*display != NULL && *xwindow != None);
+}
+
+/* The atoms in the window's _NET_WM_STATE, at most max of them, or -1
+   when it can't be read. */
+static int
+GSWindowTabbingX11State(Display *display, Window xwindow, Atom *atoms, int max)
+{
+  Atom type;
+  int format;
+  unsigned long count, remaining, i;
+  unsigned char *data = NULL;
+  int n = 0;
+
+  if (x11.getWindowProperty(display, xwindow,
+        x11.internAtom(display, "_NET_WM_STATE", False), 0, max, False,
+        XA_ATOM, &type, &format, &count, &remaining, &data) != Success)
+    {
+      return -1;
+    }
+  if (data != NULL)
+    {
+      if (type == XA_ATOM && format == 32)
+        {
+          for (i = 0; i < count && n < max; i++)
+            {
+              atoms[n++] = ((Atom *)data)[i];
+            }
+        }
+      x11.free(data);
+    }
+  return n;
+}
+#endif
+
+BOOL
+GSWindowTabbingWindowIsMaximized(NSWindow *window, BOOL *known)
+{
+#if defined(_WIN32)
+  *known = ([window windowNumber] > 0);
+  return *known && IsZoomed((HWND)(intptr_t)[window windowNumber]);
+#elif defined(GSWT_HAVE_X11)
+  Display *display;
+  Window xwindow;
+  Atom atoms[32];
+  Atom vertical, horizontal;
+  BOOL hasVertical = NO, hasHorizontal = NO;
+  int n, i;
+
+  *known = NO;
+  if (GSWindowTabbingX11Window(window, &display, &xwindow) == NO)
+    {
+      return NO;
+    }
+  n = GSWindowTabbingX11State(display, xwindow, atoms, 32);
+  if (n < 0)
+    {
+      return NO;
+    }
+  *known = YES;
+  vertical = x11.internAtom(display, "_NET_WM_STATE_MAXIMIZED_VERT", False);
+  horizontal = x11.internAtom(display, "_NET_WM_STATE_MAXIMIZED_HORZ", False);
+  for (i = 0; i < n; i++)
+    {
+      hasVertical = hasVertical || atoms[i] == vertical;
+      hasHorizontal = hasHorizontal || atoms[i] == horizontal;
+    }
+  return hasVertical && hasHorizontal;
+#else
+  *known = NO;
+  return NO;
+#endif
+}
+
+void
+GSWindowTabbingWillShowMaximized(NSWindow *window, BOOL maximized)
+{
+#if defined(GSWT_HAVE_X11)
+  Display *display;
+  Window xwindow;
+  Atom atoms[34];
+  Atom vertical, horizontal;
+  int n, i, kept = 0;
+
+  if ([window isVisible]
+    || GSWindowTabbingX11Window(window, &display, &xwindow) == NO)
+    {
+      return;
+    }
+  n = GSWindowTabbingX11State(display, xwindow, atoms, 32);
+  if (n < 0)
+    {
+      return;
+    }
+  vertical = x11.internAtom(display, "_NET_WM_STATE_MAXIMIZED_VERT", False);
+  horizontal = x11.internAtom(display, "_NET_WM_STATE_MAXIMIZED_HORZ", False);
+  for (i = 0; i < n; i++)
+    {
+      if (atoms[i] != vertical && atoms[i] != horizontal)
+        {
+          atoms[kept++] = atoms[i];
+        }
+    }
+  if (maximized)
+    {
+      atoms[kept++] = vertical;
+      atoms[kept++] = horizontal;
+    }
+  x11.changeProperty(display, xwindow,
+    x11.internAtom(display, "_NET_WM_STATE", False), XA_ATOM, 32,
+    PropModeReplace, (const unsigned char *)atoms, kept);
+#endif
+}
+
+void
+GSWindowTabbingDidShowMaximized(NSWindow *window, BOOL maximized)
+{
+#if defined(_WIN32)
+  HWND hwnd = (HWND)(intptr_t)[window windowNumber];
+
+  if ([window windowNumber] > 0 && (IsZoomed(hwnd) ? YES : NO) != maximized)
+    {
+      ShowWindow(hwnd, maximized ? SW_MAXIMIZE : SW_RESTORE);
+    }
+#endif
 }
 
 /* The base address of the loaded object (shared library, bundle or

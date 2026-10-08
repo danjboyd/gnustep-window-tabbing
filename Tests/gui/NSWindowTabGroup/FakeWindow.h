@@ -19,6 +19,7 @@
   NSString *filename;
   NSRect frame;
   BOOL visible;
+  BOOL maximized;
   BOOL key;
   BOOL edited;
   NSString *identifier;
@@ -55,9 +56,13 @@
 - (BOOL) isDocumentEdited { return edited; }
 - (BOOL) isVisible { return visible; }
 - (NSWindowTabbingIdentifier) tabbingIdentifier { return identifier; }
-- (void) _tabbingShowWithFrame: (NSRect)f makeKey: (BOOL)makeKey
+- (BOOL) _tabbingIsMaximized { return maximized; }
+- (void) _tabbingShowWithFrame: (NSRect)f
+                     maximized: (BOOL)m
+                       makeKey: (BOOL)makeKey
 {
   frame = f;
+  maximized = m;
   visible = YES;
   key = makeKey;
 }

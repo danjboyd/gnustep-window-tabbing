@@ -1,5 +1,34 @@
 2026-10-08  Daniel Boyd  <danieljboyd@icloud.com>
 
+	* Source/GSWindowTabbingPrivate.h (GSWindowTabbable): Replace
+	-_tabbingShowWithFrame:makeKey: with
+	-_tabbingShowWithFrame:maximized:makeKey:, and add
+	-_tabbingIsMaximized.
+	(GSWindowTabbingWindowIsMaximized, GSWindowTabbingWillShowMaximized,
+	GSWindowTabbingDidShowMaximized): Declare.
+	* Source/NSWindowTabGroup.m ([NSWindowTabGroup -_switchToWindow:],
+	[NSWindowTabGroup -_windowWillLeave:]): The window shown in place of
+	the selected one is maximized if that one was, as well as taking its
+	frame.
+	* Source/GSWindowTabbingWindow.m ([NSWindow -_tabbingIsMaximized]):
+	New.
+	([NSWindow -_tabbingShowWithFrame:maximized:makeKey:]): Carry the
+	maximized state.
+	* Source/GSWindowTabbingInstall.m (GSWindowTabbingWindowIsMaximized,
+	GSWindowTabbingWillShowMaximized, GSWindowTabbingDidShowMaximized):
+	New: the window manager's maximized state, X11's _NET_WM_STATE
+	(Xlib looked up at run time) or Windows' IsZoomed() and
+	ShowWindow().  Upstream, in libs-back.
+	* Source/GSWindowTabbingTheme.m
+	([GSTheme -drawWindowTabBarScrollFadeInRect:edge:window:]): Convert
+	controlColor to RGB: NSGradient draws nothing from a named colour.
+	* Tests/gui/NSWindowTabGroup/FakeWindow.h,
+	* Tests/gui/NSWindowTabGroup/group.m: Maximized windows.
+	* Tests/gui/NSWindow/tabbing_glue.m: Maximized windows on X11.
+	* Tests/gui/NSWindow/tabbing_drag.m: The default scroll fade.
+
+2026-10-08  Daniel Boyd  <danieljboyd@icloud.com>
+
 	* Source/GSWindowTabbingInstall.m: Include <windows.h> after
 	GNUstep's headers, which include <winsock2.h> first.
 

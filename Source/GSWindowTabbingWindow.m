@@ -244,10 +244,20 @@ static NSWindow *newTabWindow = nil;
 
 /* GSWindowTabbable: how the tab group moves its windows. */
 
-- (void) _tabbingShowWithFrame: (NSRect)frame makeKey: (BOOL)makeKey
+- (BOOL) _tabbingIsMaximized
+{
+  BOOL known;
+
+  return GSWindowTabbingWindowIsMaximized(self, &known);
+}
+
+- (void) _tabbingShowWithFrame: (NSRect)frame
+                     maximized: (BOOL)maximized
+                       makeKey: (BOOL)makeKey
 {
   internalOrdering++;
   [self setFrame: frame display: NO];
+  GSWindowTabbingWillShowMaximized(self, maximized);
   if (makeKey)
     {
       [self makeKeyAndOrderFront: nil];
@@ -256,6 +266,7 @@ static NSWindow *newTabWindow = nil;
     {
       [self orderFront: nil];
     }
+  GSWindowTabbingDidShowMaximized(self, maximized);
   internalOrdering--;
 }
 

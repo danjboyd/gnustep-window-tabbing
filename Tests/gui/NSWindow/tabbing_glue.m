@@ -1,7 +1,9 @@
 /* tabbing_glue.m: the tabbing API on real NSWindows: installing, automatic
    tabbing, the Windows menu's path (ordering a hidden tab in), titles,
    the reserved row, toggling the bar, closing, Disallowed and panels,
-   merging, moving a tab out, validation, and the bar's mouse handling.
+   merging, moving a tab out, validation, the bar's mouse handling, and
+   (on X11) the window manager's maximized state going with the selected
+   tab.
    Needs a display (a private Xvfb, no window manager needed); skips
    without one.
 
@@ -17,6 +19,96 @@
 #import <AppKit/AppKit.h>
 #import "GSWindowTabbing.h"
 #import "GSWindowTabBarView.h"
+#import <GNUstepGUI/GSDisplayServer.h>
+
+#if !defined(_WIN32) && defined(__has_include)
+#if __has_include(<X11/Xlib.h>)
+#define HAVE_X11 1
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+#include <dlfcn.h>
+#include <X11/Xlib.h>
+#include <X11/Xatom.h>
+
+/* Xlib from libs-back's X11 server, looked up as the code does. */
+static Atom (*internAtom)(Display *, const char *, Bool);
+static int (*getWindowProperty)(Display *, Window, Atom, long, long, Bool,
+  Atom, Atom *, int *, unsigned long *, unsigned long *, unsigned char **);
+static int (*changeProperty)(Display *, Window, Atom, Atom, int, int,
+  const unsigned char *, int);
+static int (*xFree)(void *);
+
+static Display *
+x11Display (void)
+{
+  GSDisplayServer *server = GSCurrentServer ();
+
+  if (NSClassFromString (@"XGServer") == Nil
+    || [server isKindOfClass: NSClassFromString (@"XGServer")] == NO)
+    {
+      return NULL;
+    }
+  internAtom = dlsym (RTLD_DEFAULT, "XInternAtom");
+  getWindowProperty = dlsym (RTLD_DEFAULT, "XGetWindowProperty");
+  changeProperty = dlsym (RTLD_DEFAULT, "XChangeProperty");
+  xFree = dlsym (RTLD_DEFAULT, "XFree");
+  if (internAtom == NULL || getWindowProperty == NULL
+    || changeProperty == NULL || xFree == NULL)
+    {
+      return NULL;
+    }
+  return (Display *)[server serverDevice];
+}
+
+static Window
+x11Window (NSWindow *window)
+{
+  return (Window)(uintptr_t)[GSCurrentServer () windowDevice: [window windowNumber]];
+}
+
+/* Sets the window's _NET_WM_STATE as a window manager would: maximized
+   both ways, or nothing. */
+static void
+setMaximized (Display *display, NSWindow *window, BOOL flag)
+{
+  Atom atoms[2];
+
+  atoms[0] = internAtom (display, "_NET_WM_STATE_MAXIMIZED_VERT", False);
+  atoms[1] = internAtom (display, "_NET_WM_STATE_MAXIMIZED_HORZ", False);
+  changeProperty (display, x11Window (window),
+                  internAtom (display, "_NET_WM_STATE", False), XA_ATOM, 32,
+                  PropModeReplace, (const unsigned char *)atoms, flag ? 2 : 0);
+}
+
+/* How many of the two maximized atoms the window's _NET_WM_STATE has. */
+static int
+maximizedAtoms (Display *display, NSWindow *window)
+{
+  Atom vertical = internAtom (display, "_NET_WM_STATE_MAXIMIZED_VERT", False);
+  Atom horizontal = internAtom (display, "_NET_WM_STATE_MAXIMIZED_HORZ", False);
+  Atom type;
+  int format, found = 0;
+  unsigned long count, remaining, i;
+  unsigned char *data = NULL;
+
+  if (getWindowProperty (display, x11Window (window),
+                         internAtom (display, "_NET_WM_STATE", False), 0, 32,
+                         False, XA_ATOM, &type, &format, &count, &remaining,
+                         &data) == Success && data != NULL)
+    {
+      for (i = 0; i < count; i++)
+        {
+          Atom atom = ((Atom *)data)[i];
+
+          found += (atom == vertical || atom == horizontal) ? 1 : 0;
+        }
+      xFree (data);
+    }
+  return found;
+}
+#endif
+#endif
 
 @interface NewTabResponder : NSObject
 {
@@ -266,6 +358,69 @@ main (int argc, char **argv)
       }
     }
   END_SET ("window tabbing on NSWindow")
+
+  START_SET ("maximized windows")
+    {
+#if defined(HAVE_X11)
+      Display *display;
+      NSWindow *a, *b;
+
+      if (getenv ("DISPLAY") == NULL)
+        {
+          SKIP ("no display")
+        }
+      NS_DURING
+        {
+          [NSApplication sharedApplication];
+        }
+      NS_HANDLER
+        {
+          SKIP ("no display server")
+        }
+      NS_ENDHANDLER
+      display = x11Display ();
+      if (display == NULL)
+        {
+          SKIP ("not libs-back's X11 server")
+        }
+      GSWindowTabbingInstall ();
+      [NSWindow setAllowsAutomaticWindowTabbing: NO];
+      a = [[NSWindow alloc] initWithContentRect: NSMakeRect (100, 100, 400, 300)
+                                      styleMask: NSTitledWindowMask | NSClosableWindowMask
+                                                 | NSResizableWindowMask
+                                        backing: NSBackingStoreBuffered
+                                          defer: NO];
+      b = [[NSWindow alloc] initWithContentRect: NSMakeRect (100, 100, 400, 300)
+                                      styleMask: NSTitledWindowMask | NSClosableWindowMask
+                                                 | NSResizableWindowMask
+                                        backing: NSBackingStoreBuffered
+                                          defer: NO];
+      [a setTabbingIdentifier: @"zoom"];
+      [b setTabbingIdentifier: @"zoom"];
+      [a setReleasedWhenClosed: NO];
+      [b setReleasedWhenClosed: NO];
+      [a makeKeyAndOrderFront: nil];
+      [a addTabbedWindow: b ordered: NSWindowAbove];
+      [[a tabGroup] setSelectedWindow: a];
+
+      /* No window manager runs here: the test sets the state on the
+         shown window, as one would, and reads what the code gave the
+         window it shows next. */
+      setMaximized (display, a, YES);
+      [[a tabGroup] setSelectedWindow: b];
+      PASS (maximizedAtoms (display, b) == 2,
+            "a tab selected in place of a maximized window is mapped maximized (_NET_WM_STATE)");
+      setMaximized (display, b, NO);
+      [[a tabGroup] setSelectedWindow: a];
+      PASS (maximizedAtoms (display, a) == 0,
+            "one selected in place of a window that isn't maximized loses the state it had");
+      [b close];
+      [a close];
+#else
+      SKIP ("no X11 headers")
+#endif
+    }
+  END_SET ("maximized windows")
 
   [pool release];
   return 0;
