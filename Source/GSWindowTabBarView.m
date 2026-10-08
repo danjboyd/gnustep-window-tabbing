@@ -147,6 +147,11 @@
     {
       state |= GSWindowTabFirst;
     }
+  else if ([windows objectAtIndex: index - 1] == [[_tabWindow tabGroup] selectedWindow]
+           || (NSInteger)index - 1 == _hoveredTab || (NSInteger)index - 1 == _pressedTab)
+    {
+      state |= GSWindowTabPreviousHighlighted;
+    }
   if (index + 1 == [windows count])
     {
       state |= GSWindowTabLast;
@@ -296,11 +301,15 @@
     }
 }
 
+/* GNUstep gives an entered event's location in the view's coordinates,
+   Apple's in the window's, so ask the window where the pointer is. */
 - (void) mouseEntered: (NSEvent *)event
 {
+  NSPoint point = [[self window] mouseLocationOutsideOfEventStream];
+
   _windowAcceptedMouseMoved = [[self window] acceptsMouseMovedEvents];
   [[self window] setAcceptsMouseMovedEvents: YES];
-  [self updateHover: [self convertPoint: [event locationInWindow] fromView: nil]];
+  [self updateHover: [self convertPoint: point fromView: nil]];
 }
 
 - (void) mouseMoved: (NSEvent *)event

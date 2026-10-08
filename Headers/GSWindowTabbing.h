@@ -141,7 +141,10 @@ enum
   /* The tab's window has unsaved changes. */
   GSWindowTabEdited = 1 << 6,
   GSWindowTabFirst = 1 << 7,
-  GSWindowTabLast = 1 << 8
+  GSWindowTabLast = 1 << 8,
+  /* The tab before this one is selected, hovered or pressed (a theme
+     may leave out the separator between them). */
+  GSWindowTabPreviousHighlighted = 1 << 9
 };
 typedef unsigned int GSWindowTabState;
 

@@ -21,6 +21,7 @@
 #define _GSWindowTabBarView_h_INCLUDE
 
 #import <AppKit/AppKit.h>
+#import "GSWindowTabbing.h"
 
 /* Each window of a group has one; the selected window's is on screen.
    It lays the tabs out and handles the mouse; GSTheme draws. */
@@ -51,6 +52,8 @@
 /* NSZeroRect when nothing responds to -newWindowForTab:. */
 - (NSRect) newTabButtonRect;
 - (NSInteger) tabIndexAtPoint: (NSPoint)point;
+/* The state the theme draws the tab at index in. */
+- (GSWindowTabState) stateForTabAtIndex: (NSUInteger)index;
 @end
 
 /* The layout without a view, for tests: count tabs of equal width

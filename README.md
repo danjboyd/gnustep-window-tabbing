@@ -86,6 +86,11 @@ overrides what it draws differently. Each gets the tab bar's window.
                                   window: (NSWindow *)window;
 ```
 
+- **States:** `GSWindowTabState` is a set of bits (selected, hovered,
+  pressed, key window, close button hovered or pressed, edited, first,
+  last). `GSWindowTabPreviousHighlighted` says the tab before is
+  selected, hovered or pressed, so a theme can leave out the separator
+  between them.
 - **Placement:** `GSWindowTabBarAboveContent` (the default) gives the bar
   its own row directly above the content: below a title or header bar, an
   in-window menu bar and a toolbar. The content gives up the row while the
