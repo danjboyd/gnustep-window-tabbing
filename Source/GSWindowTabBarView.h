@@ -42,6 +42,10 @@
 - (void) tabsDidChange;
 /* The layout, in the view's coordinates: */
 - (NSUInteger) numberOfTabs;
+/* The theme's margin at each end and spacing between tabs. */
+- (CGFloat) margin;
+- (CGFloat) spacing;
+- (CGFloat) tabWidth;
 - (NSRect) rectForTabAtIndex: (NSUInteger)index;
 - (NSRect) closeButtonRectForTabAtIndex: (NSUInteger)index;
 /* NSZeroRect when nothing responds to -newWindowForTab:. */
@@ -50,7 +54,8 @@
 @end
 
 /* The layout without a view, for tests: count tabs of equal width
-   between minimum and maximum share width; the rects run from x 0. */
+   between minimum and maximum share width (the bar's, less its margins,
+   the "+" button and the spacing). */
 CGFloat GSWindowTabWidth (NSUInteger count, CGFloat width,
                           CGFloat minimum, CGFloat maximum);
 

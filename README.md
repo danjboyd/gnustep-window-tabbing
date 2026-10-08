@@ -67,6 +67,8 @@ overrides what it draws differently. Each gets the tab bar's window.
 - (CGFloat) windowTabMinimumWidthForWindow: (NSWindow *)window;       /* 80 */
 - (CGFloat) windowTabMaximumWidthForWindow: (NSWindow *)window;       /* 240 */
 - (CGFloat) windowTabNewTabButtonWidthForWindow: (NSWindow *)window;  /* 28; 0 for none */
+- (CGFloat) windowTabBarMarginForWindow: (NSWindow *)window;          /* 0 */
+- (CGFloat) windowTabSpacingForWindow: (NSWindow *)window;            /* 0 */
 - (NSRect) windowTabCloseButtonRectForTabRect: (NSRect)tabRect
                                         state: (GSWindowTabState)state
                                        window: (NSWindow *)window;
@@ -96,9 +98,12 @@ overrides what it draws differently. Each gets the tab bar's window.
   `Pressed`, `WindowKey` (the bar's window is key), `CloseHovered`,
   `ClosePressed`, `Edited` (the tab's window has unsaved changes), `First`,
   `Last`. The "+" button gets `Hovered`, `Pressed` and `WindowKey`.
-- **Widths:** tabs share the bar's width (less the "+" button) equally,
-  between the minimum and the maximum, from the bar's start. Past the
-  minimum, tabs are cut off at the bar's end (no scrolling yet).
+- **Widths:** tabs share the bar's width equally, between the minimum and
+  the maximum, from the bar's start: the width less the margin at each
+  end, the "+" button, and the spacing between tabs and before the "+".
+  Past the minimum, tabs are cut off at the bar's end (no scrolling yet).
+  The tab rects passed to the theme are full height; a theme insets its
+  drawing vertically itself.
 - **Close button:** `-windowTabCloseButtonRectForTabRect:state:window:`
   returns its rect in the tab, or `NSZeroRect` for none in that state (the
   default shows it on the selected tab and the one under the pointer). Hit

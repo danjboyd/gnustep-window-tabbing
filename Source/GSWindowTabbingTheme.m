@@ -93,6 +93,16 @@ GSWindowTabFittedTitle (NSString *title, NSDictionary *attributes, CGFloat width
   return 28.0;
 }
 
+- (CGFloat) windowTabBarMarginForWindow: (NSWindow *)window
+{
+  return 0.0;
+}
+
+- (CGFloat) windowTabSpacingForWindow: (NSWindow *)window
+{
+  return 0.0;
+}
+
 /* 14pt, centred vertically, 6pt from the tab's right edge; shown on
    the selected tab and the one under the pointer. */
 - (NSRect) windowTabCloseButtonRectForTabRect: (NSRect)tabRect

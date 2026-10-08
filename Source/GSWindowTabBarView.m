@@ -64,15 +64,39 @@
     {
       return NSZeroRect;
     }
-  return NSMakeRect (NSMaxX ([self bounds]) - width, 0.0, width, NSHeight ([self bounds]));
+  return NSMakeRect (NSMaxX ([self bounds]) - [self margin] - width, 0.0,
+                     width, NSHeight ([self bounds]));
 }
 
+- (CGFloat) margin
+{
+  return MAX (0.0, [[GSTheme theme] windowTabBarMarginForWindow: _tabWindow]);
+}
+
+- (CGFloat) spacing
+{
+  return MAX (0.0, [[GSTheme theme] windowTabSpacingForWindow: _tabWindow]);
+}
+
+/* The bar's width less its margins, the "+" button and the spacing
+   between the tabs and before the button, shared by the tabs. */
 - (CGFloat) tabWidth
 {
   GSTheme *theme = [GSTheme theme];
-  CGFloat available = NSWidth ([self bounds]) - NSWidth ([self newTabButtonRect]);
+  NSUInteger count = [self numberOfTabs];
+  CGFloat newTab = NSWidth ([self newTabButtonRect]);
+  CGFloat spacing = [self spacing];
+  CGFloat available = NSWidth ([self bounds]) - 2.0 * [self margin] - newTab;
 
-  return GSWindowTabWidth ([self numberOfTabs], available,
+  if (newTab > 0.0)
+    {
+      available -= spacing;
+    }
+  if (count > 1)
+    {
+      available -= spacing * (count - 1);
+    }
+  return GSWindowTabWidth (count, available,
                            [theme windowTabMinimumWidthForWindow: _tabWindow],
                            [theme windowTabMaximumWidthForWindow: _tabWindow]);
 }
@@ -81,7 +105,8 @@
 {
   CGFloat width = [self tabWidth];
 
-  return NSMakeRect (index * width, 0.0, width, NSHeight ([self bounds]));
+  return NSMakeRect ([self margin] + index * (width + [self spacing]), 0.0,
+                     width, NSHeight ([self bounds]));
 }
 
 - (GSWindowTabState) stateForTabAtIndex: (NSUInteger)index
