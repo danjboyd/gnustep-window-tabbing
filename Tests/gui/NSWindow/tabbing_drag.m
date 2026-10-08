@@ -178,7 +178,8 @@ main (int argc, char **argv)
                   "a tab dragged two slots along the bar is dropped there");
       PASS ([[a tabGroup] selectedWindow] == a && [a isVisible],
             "and stays selected, on screen");
-      PASS ([GSWindowTabBarViewForWindow (a) isDraggingTab] == NO, "the drag is over");
+      PASS ([(GSWindowTabBarView *)GSWindowTabBarViewForWindow (a) isDraggingTab] == NO,
+            "the drag is over");
 
       /* Escape: back where it was. */
       path[0] = fromTab (a, 2, -20.0, 0.0);
@@ -223,17 +224,21 @@ main (int argc, char **argv)
       PASS ([[[a tabGroup] windows] count] == 1 && [a isVisible],
             "its old group's other tab is shown in its place");
 
-      /* Onto a window of another kind: declined, a window of its own. */
-      e = makeWindow (@"E", @"other", NSMakeRect (100, 50, 500, 250));
+      /* Onto a window of another kind, clear of the others: declined, a
+         window of its own. */
+      e = makeWindow (@"E", @"other", NSMakeRect (800, 600, 500, 250));
       [e orderFront: nil];
       spin ();
       path[0] = fromTab (c, 0, 20.0, 0.0);
       path[1] = fromTab (c, 0, 30.0, -80.0);
       path[2] = NSMakePoint (NSMidX ([e frame]), NSMaxY ([e frame]) - 10.0);
       dragTab (c, 0, path, 3, NO);
-      PASS ([[[e tabGroup] windows] count] == 1 && [[[c tabGroup] windows] count] == 1
-            && [c isVisible] && [[d tabGroup] selectedWindow] == d && [d isVisible],
-            "dropped on a window with another tabbing identifier, it becomes a window of its own");
+      PASS ([[[e tabGroup] windows] count] == 1,
+            "a window with another tabbing identifier declines a dropped tab");
+      PASS ([[[c tabGroup] windows] count] == 1 && [c isVisible],
+            "which becomes a window of its own");
+      PASS ([[d tabGroup] selectedWindow] == d && [d isVisible],
+            "its old group's other tab is shown in its place");
     }
   END_SET ("dragging tabs")
 

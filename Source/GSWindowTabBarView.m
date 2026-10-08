@@ -60,6 +60,11 @@ GSWindowTabScreenPoint(NSEvent *event)
   return (window != nil) ? [window convertBaseToScreen: point] : point;
 }
 
+/* Used before they are defined. */
+@interface GSWindowTabBarView (Private)
+- (void) updateToolTips;
+@end
+
 @implementation GSWindowTabBarView
 
 - (id) initWithWindow: (NSWindow *)window
