@@ -1,5 +1,10 @@
 2026-10-08  Daniel Boyd  <danieljboyd@icloud.com>
 
+	* Source/GSWindowTabbingInstall.m: Include <windows.h> after
+	GNUstep's headers, which include <winsock2.h> first.
+
+2026-10-08  Daniel Boyd  <danieljboyd@icloud.com>
+
 	* Source/GSWindowTabbingInstall.m (GSWindowTabbingObjectBase): New,
 	which loaded object holds an address: dladdr() or, on Windows,
 	GetModuleHandleExW(), as MinGW has no <dlfcn.h>.

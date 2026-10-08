@@ -36,22 +36,25 @@
    each wrapper is one call inside the method itself, and this file is
    deleted. */
 
-/* Which loaded object holds an address: dladdr() where there is one,
-   GetModuleHandleExW() on Windows, whose MinGW toolchains have no
-   <dlfcn.h>. */
-#if defined(_WIN32)
-#include <windows.h>
-#else
-#ifndef _GNU_SOURCE
+/* dladdr() needs _GNU_SOURCE before any system header. */
+#if !defined(_WIN32) && !defined(_GNU_SOURCE)
 #define _GNU_SOURCE
-#endif
-#include <dlfcn.h>
 #endif
 #include <stdlib.h>
 
 #import "GSWindowTabbingPrivate.h"
 #import "GSWindowTabBarView.h"
 #import <objc/runtime.h>
+
+/* Which loaded object holds an address: dladdr() where there is one,
+   GetModuleHandleExW() on Windows, whose MinGW toolchains have no
+   <dlfcn.h>.  <windows.h> comes after GNUstep's headers, which include
+   <winsock2.h> (it must precede <windows.h>). */
+#if defined(_WIN32)
+#include <windows.h>
+#else
+#include <dlfcn.h>
+#endif
 
 #ifndef GS_HAS_WINDOW_TABBING
 
