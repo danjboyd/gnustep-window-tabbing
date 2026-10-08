@@ -13,7 +13,9 @@
 #import "Testing.h"
 #import "FakeWindow.h"
 /* The model itself, compiled into the test: it needs no NSWindow. */
-#import "../../Source/GSWindowTabGroup.m"
+#import "../../Source/NSWindowTabGroup.m"
+#import "../../Source/NSWindowTab.m"
+#import "../../Source/GSWindowTabBarLayout.m"
 
 static NSArray *
 names (NSArray *windows)
@@ -64,7 +66,7 @@ main (int argc, char **argv)
             "the new selected window takes the old one's frame");
       PASS (b->key == YES && a->key == NO, "and its key status");
       PASS ([group isTabBarVisible], "two windows: the tab bar shows");
-      PASS ([b gsTabGroup] == group, "the window knows its group");
+      PASS ([b _tabbingGroup] == group, "the window knows its group");
 
       b->frame = NSMakeRect (40, 40, 320, 220);
       [group setSelectedWindow: (NSWindow *)a];
@@ -96,12 +98,12 @@ main (int argc, char **argv)
             "an index past the end appends");
 
       [group setSelectedWindow: (NSWindow *)a];
-      [group gsSelectNextTab: YES];
+      [group _selectNextTab: YES];
       PASS ([[[group selectedWindow] description] isEqual: @"B"], "next tab");
-      [group gsSelectNextTab: NO];
-      [group gsSelectNextTab: NO];
+      [group _selectNextTab: NO];
+      [group _selectNextTab: NO];
       PASS ([[[group selectedWindow] description] isEqual: @"D"], "previous tab wraps round");
-      [group gsSelectNextTab: YES];
+      [group _selectNextTab: YES];
       PASS ([[[group selectedWindow] description] isEqual: @"A"], "next tab wraps round");
     }
   END_SET ("ordering")
@@ -118,16 +120,16 @@ main (int argc, char **argv)
       [group setSelectedWindow: (NSWindow *)b];
       b->key = YES;
       b->frame = NSMakeRect (70, 70, 330, 230);
-      [group gsWindowWillLeave: b];
+      [group _windowWillLeave: b];
       PASS ([group selectedWindow] == (id)c && c->visible,
             "closing the selected tab selects its right-hand neighbour");
       PASS (NSEqualRects (c->frame, NSMakeRect (70, 70, 330, 230)) && c->key,
             "which takes its place, frame and key status");
-      [group gsWindowWillLeave: c];
+      [group _windowWillLeave: c];
       PASS ([group selectedWindow] == (id)a && a->visible,
             "closing the last tab selects the one before it");
       PASS ([group isTabBarVisible] == NO, "back to one window: the bar hides");
-      [group gsWindowWillLeave: a];
+      [group _windowWillLeave: a];
       PASS ([[group windows] count] == 0 && [group selectedWindow] == nil,
             "closing the last window empties the group");
     }
@@ -140,7 +142,7 @@ main (int argc, char **argv)
       NSWindowTabGroup *group = groupWith (a);
 
       [group addWindow: (NSWindow *)b];
-      [group gsWindowWillLeave: a];
+      [group _windowWillLeave: a];
       PASS ([group selectedWindow] == (id)b && b->visible && a->visible == NO,
             "closing a hidden tab leaves the selection alone");
     }
@@ -156,13 +158,13 @@ main (int argc, char **argv)
 
       [two addWindow: (NSWindow *)c];
       [one addWindow: (NSWindow *)c];
-      PASS ([c gsTabGroup] == one && [[one windows] count] == 2,
+      PASS ([c _tabbingGroup] == one && [[one windows] count] == 2,
             "a window added to another group joins it");
       PASS ([[two windows] count] == 1 && [two selectedWindow] == (id)b && b->visible,
             "and leaves its old group, whose other window shows again");
 
       [one removeWindow: (NSWindow *)c];
-      PASS ([c gsTabGroup] == nil && [[one windows] count] == 1,
+      PASS ([c _tabbingGroup] == nil && [[one windows] count] == 1,
             "removeWindow: takes a window out of its group");
     }
   END_SET ("moving between groups")
@@ -188,11 +190,11 @@ main (int argc, char **argv)
       [inner release];
       PASS ([a retainCount] == aCount + 1, "with two windows it retains them (hidden tabs)");
       inner = [NSAutoreleasePool new];
-      [group gsWindowWillLeave: b];
+      [group _windowWillLeave: b];
       [inner release];
       PASS ([a retainCount] == aCount, "and lets go when one is left");
-      [a gsSetTabGroup: nil];
-      [b gsSetTabGroup: nil];
+      [a _setTabbingGroup: nil];
+      [b _setTabbingGroup: nil];
       RELEASE (group);
       RELEASE (a);
       RELEASE (b);
@@ -204,14 +206,14 @@ main (int argc, char **argv)
       FakeWindow *a = [FakeWindow named: @"A"];
       NSWindowTabGroup *group = groupWith (a);
 
-      [group gsToggleTabBar];
+      [group _toggleTabBar];
       PASS ([group isTabBarVisible], "toggling shows the bar for one window");
       [group addWindow: (NSWindow *)[FakeWindow named: @"B"]];
-      [group gsToggleTabBar];
+      [group _toggleTabBar];
       PASS ([group isTabBarVisible] == NO, "and hides it again, even with two");
-      [group gsToggleTabBar];
+      [group _toggleTabBar];
       PASS ([group isTabBarVisible], "shown again");
-      [group gsWindowWillLeave: [[group windows] lastObject]];
+      [group _windowWillLeave: [[group windows] lastObject]];
       PASS ([group isTabBarVisible] == NO,
             "hidden and shown again with two tabs is automatic: it goes at one");
       PASS (a->changes > 0, "windows hear of every change (to redraw the bar)");

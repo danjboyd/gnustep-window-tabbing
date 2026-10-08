@@ -55,18 +55,18 @@
 - (BOOL) isDocumentEdited { return edited; }
 - (BOOL) isVisible { return visible; }
 - (NSWindowTabbingIdentifier) tabbingIdentifier { return identifier; }
-- (void) gsTabShowWithFrame: (NSRect)f makeKey: (BOOL)makeKey
+- (void) _tabbingShowWithFrame: (NSRect)f makeKey: (BOOL)makeKey
 {
   frame = f;
   visible = YES;
   key = makeKey;
 }
-- (void) gsTabHide
+- (void) _tabbingHide
 {
   visible = NO;
   key = NO;
 }
-- (void) gsTabGroupDidChange { changes++; }
-- (NSWindowTabGroup *) gsTabGroup { return group; }
-- (void) gsSetTabGroup: (NSWindowTabGroup *)g { ASSIGN (group, g); }
+- (void) _tabbingGroupDidChange { changes++; }
+- (NSWindowTabGroup *) _tabbingGroup { return group; }
+- (void) _setTabbingGroup: (NSWindowTabGroup *)g { ASSIGN (group, g); }
 @end

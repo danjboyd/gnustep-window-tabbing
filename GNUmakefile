@@ -10,7 +10,8 @@ include GSWindowTabbing.make
 LIBRARY_NAME = libGSWindowTabbing
 libGSWindowTabbing_OBJC_FILES = $(GSWINDOWTABBING_OBJC_FILES)
 libGSWindowTabbing_HEADER_FILES_DIR = Headers
-libGSWindowTabbing_HEADER_FILES = GSWindowTabbing.h
+libGSWindowTabbing_HEADER_FILES = GSWindowTabbing.h \
+  AppKit/NSWindowTab.h AppKit/NSWindowTabGroup.h
 libGSWindowTabbing_LIBRARIES_DEPEND_UPON = -lgnustep-gui $(FND_LIBS) $(OBJC_LIBS)
 ADDITIONAL_INCLUDE_DIRS += $(GSWINDOWTABBING_INCLUDE_DIRS)
 ADDITIONAL_OBJCFLAGS += -Wall

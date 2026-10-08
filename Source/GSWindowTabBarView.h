@@ -24,8 +24,8 @@
    Boston, MA 02110-1301, USA.
 */
 
-#ifndef _GSWindowTabBarView_h_INCLUDE
-#define _GSWindowTabBarView_h_INCLUDE
+#ifndef _GNUstep_H_GSWindowTabBarView
+#define _GNUstep_H_GSWindowTabBarView
 
 #import <AppKit/AppKit.h>
 #import "GSWindowTabbing.h"
@@ -58,15 +58,16 @@
 - (NSRect) closeButtonRectForTabAtIndex: (NSUInteger)index;
 /* NSZeroRect when nothing responds to -newWindowForTab:. */
 - (NSRect) newTabButtonRect;
+/* The tab at point, or -1. */
 - (NSInteger) tabIndexAtPoint: (NSPoint)point;
 /* The state the theme draws the tab at index in. */
 - (GSWindowTabState) stateForTabAtIndex: (NSUInteger)index;
 @end
 
-/* The layout without a view, for tests: count tabs of equal width
-   between minimum and maximum share width (the bar's, less its margins,
-   the "+" button and the spacing). */
+/* The width of each of count tabs sharing width equally, between minimum
+   and maximum (0 for no maximum).  GSWindowTabBarLayout.m, so tests can
+   use it without a view. */
 CGFloat GSWindowTabWidth(NSUInteger count, CGFloat width,
-                          CGFloat minimum, CGFloat maximum);
+                         CGFloat minimum, CGFloat maximum);
 
-#endif
+#endif /* _GNUstep_H_GSWindowTabBarView */
