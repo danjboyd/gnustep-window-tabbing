@@ -1,3 +1,11 @@
+2026-10-08 Daniel Boyd <danieljboyd@icloud.com>
+
+	* Headers/GSWindowTabbing.h: GSWT_EXPORT, empty of dllimport, for the
+	public functions and constant, in place of GS_EXPORT: the code is
+	compiled into the theme or app that uses it, and GS_EXPORT made
+	Windows builds warn (dllimport, LNK4217).  In libs-gui these become
+	APPKIT_EXPORT.
+
 2026-10-08  Daniel Boyd  <danieljboyd@icloud.com>
 
 	Window tabbing: Apple's NSWindow tabbing API, drawn by GSTheme.
