@@ -226,8 +226,27 @@ main (int argc, char **argv)
       PASS_EQUAL ([tab title], @"Report.md", "a tab's title is its window's");
       ASSIGN (a->name, @"Renamed.md");
       PASS_EQUAL ([tab title], @"Renamed.md", "and follows it");
+      ASSIGN (a->name, @"Report.md  --  /home/me/Notes");
+      ASSIGN (a->filename, @"/home/me/Notes/Report.md");
+      PASS_EQUAL ([tab title], @"Report.md",
+                  "a window showing a file: its file name, not GNUstep's title with the folder");
+      ASSIGN (a->name, @"Draft");
+      PASS_EQUAL ([tab title], @"Draft",
+                  "a title the app set after the file: the window's title");
+      ASSIGN (a->name, @"Window");
+      ASSIGN (a->filename, @"Window");
+      PASS_EQUAL ([tab title], @"Window",
+                  "GNUstep's default represented filename (\"Window\"): the title");
+      ASSIGN (a->filename, @"");
+      ASSIGN (a->name, @"Report.md  --  /home/me/Notes");
+      PASS_EQUAL ([tab title], @"Report.md  --  /home/me/Notes",
+                  "an empty represented filename: the window's title");
+      ASSIGN (a->name, @"Renamed.md");
       [tab setTitle: @"Custom"];
-      PASS_EQUAL ([tab title], @"Custom", "unless the tab has one of its own");
+      ASSIGN (a->filename, @"/home/me/Notes/Report.md");
+      PASS_EQUAL ([tab title], @"Custom",
+                  "unless the tab has one of its own, even for a file");
+      DESTROY (a->filename);
       [tab setTitle: nil];
       [tab setAttributedTitle: AUTORELEASE ([[NSAttributedString alloc] initWithString: @"Styled"])];
       PASS_EQUAL ([tab title], @"Styled", "or an attributed one");

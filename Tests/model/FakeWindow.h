@@ -16,6 +16,7 @@
 {
 @public
   NSString *name;
+  NSString *filename;
   NSRect frame;
   BOOL visible;
   BOOL key;
@@ -42,12 +43,14 @@
 - (void) dealloc
 {
   RELEASE (name);
+  RELEASE (filename);
   RELEASE (group);
   [super dealloc];
 }
 - (NSString *) description { return name; }
 - (NSRect) frame { return frame; }
 - (NSString *) title { return name; }
+- (NSString *) representedFilename { return filename; }
 - (BOOL) isKeyWindow { return key; }
 - (BOOL) isDocumentEdited { return edited; }
 - (BOOL) isVisible { return visible; }

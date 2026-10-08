@@ -28,6 +28,9 @@
 @protocol GSWindowTabbable
 - (NSRect) frame;
 - (NSString *) title;
+/* The file the window shows; nil or empty for none (NSWindow's
+   -representedFilename). */
+- (NSString *) representedFilename;
 - (BOOL) isKeyWindow;
 - (BOOL) isDocumentEdited;
 - (NSWindowTabbingIdentifier) tabbingIdentifier;

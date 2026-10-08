@@ -170,8 +170,8 @@ main (int argc, char **argv)
       [b setTitle: @"Renamed"];
       PASS_EQUAL ([[b tab] title], @"Renamed", "a tab's title follows -setTitle:");
       [b setTitleWithRepresentedFilename: @"/tmp/Notes.txt"];
-      PASS_EQUAL ([[b tab] title], @"Notes.txt  --  /tmp",
-                  "and -setTitleWithRepresentedFilename:");
+      PASS_EQUAL ([[b tab] title], @"Notes.txt",
+                  "and -setTitleWithRepresentedFilename:, as the file's name");
 
       item = AUTORELEASE ([[NSMenuItem alloc] initWithTitle: @"Next"
                                                      action: @selector(selectNextTab:)

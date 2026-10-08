@@ -25,6 +25,16 @@ MyTheme_OBJC_FILES += $(GSWINDOWTABBING_OBJC_FILES)
 ADDITIONAL_INCLUDE_DIRS += $(GSWINDOWTABBING_INCLUDE_DIRS)
 ```
 
+Two things the build needs:
+
+- `GSWINDOWTABBING_DIR` must be a **relative** path (from the directory of
+  the GNUmakefile): gnustep-make puts each object at
+  `./obj/<target>.obj/<the source's path>`, which fails for an absolute
+  path.
+- The `+=` lines must come **before** `bundle.make` (or `application.make`,
+  `library.make`) is included, after `common.make`: gnustep-make reads the
+  file lists when it includes those, and later additions are never built.
+
 ```objc
 #import "GSWindowTabbing.h"
 
@@ -109,7 +119,9 @@ Apple's names and behaviour, a subset:
   `-validateUserInterfaceItem:` (Toggle's menu item reads "Show Tab Bar" or
   "Hide Tab Bar").
 - `NSWindowTab`: `title` (the window's title unless set; it follows
-  `-setTitle:` and `-setTitleWithRepresentedFilename:`), `attributedTitle`,
+  `-setTitle:` and `-setTitleWithRepresentedFilename:`; for a window whose
+  title is GNUstep's represented-filename title, "Notes.txt  --  /tmp", the
+  file's name alone, as macOS shows it), `attributedTitle`,
   `toolTip` (shown over the tab), `accessoryView` (stored, not shown yet).
 - `NSWindowTabGroup`: `identifier`, `windows`, `selectedWindow` (settable),
   `tabBarVisible`, `overviewVisible` (always NO), `-addWindow:`,
@@ -131,6 +143,11 @@ Behaviour:
   windows there until they close.
 - Closing the selected tab selects its right-hand neighbour (the one
   before it for the last tab); closing the last window ends the group.
+  The neighbour is shown before the window closes (in `-close`), so the app
+  never counts the closed tab as its last window: NSApplication decides
+  that at `NSWindowWillCloseNotification`, from the windows on screen, and
+  an app whose delegate says to terminate after the last window would
+  quit.
 - The bar hides with one window, unless `-toggleTabBar:` showed it;
   toggling back to what the automatic rule would show returns to it.
 - Automatic tabbing: a window with `NSWindowTabbingModePreferred` (or
@@ -146,7 +163,12 @@ Behaviour:
 - Only titled windows that aren't panels are tabbed, and never
   `NSWindowTabbingModeDisallowed` ones.
 - Keyboard: Ctrl+Tab and Ctrl+Page Down select the next tab,
-  Ctrl+Shift+Tab and Ctrl+Page Up the previous one, as in GNOME's apps.
+  Ctrl+Shift+Tab and Ctrl+Page Up the previous one, as in GNOME's apps,
+  while the window has more than one tab. They are taken in the window's
+  `-performKeyEquivalent:` (NSApp offers a key-down to the key window
+  there first) and `-sendEvent:`, ahead of the first responder: a text
+  view doesn't get them (it would insert a tab or scroll), and with one tab
+  they go on as before (Ctrl+Tab moves between key views).
 - Mouse: a press selects a tab (as GTK's tabs do); the close and "+"
   buttons act on the release; a middle click closes a tab.
 
@@ -166,7 +188,8 @@ which is the only one on screen.
   with each window's state kept beside it in a map table), and hooks on
   `-orderWindow:relativeTo:`, `-setTitle:`,
   `-setTitleWithRepresentedFilename:`, `-setDocumentEdited:`, `-sendEvent:`,
-  `-validateUserInterfaceItem:` and `-dealloc`. The bar's row is reserved by
+  `-performKeyEquivalent:`, `-close`, `-validateUserInterfaceItem:` and
+  `-dealloc`. The bar's row is reserved by
   wrapping `GSWindowDecorationView`'s `-layout`,
   `-contentRectForFrameRect:styleMask:` and
   `-frameRectForContentRect:styleMask:`, the way the in-window menu bar and

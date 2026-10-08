@@ -449,6 +449,8 @@ static IMP originalSetTitle;
 static IMP originalSetTitleWithRepresentedFilename;
 static IMP originalSetDocumentEdited;
 static IMP originalSendEvent;
+static IMP originalPerformKeyEquivalent;
+static IMP originalClose;
 static IMP originalValidateUserInterfaceItem;
 static IMP originalWindowDealloc;
 static IMP originalDecorationLayout;
@@ -600,33 +602,86 @@ GSTabSetDocumentEdited (id self, SEL _cmd, BOOL flag)
 }
 
 /* Ctrl+Tab and Ctrl+Page Down select the next tab, Ctrl+Shift+Tab and
-   Ctrl+Page Up the previous one, as in GNOME's apps. */
+   Ctrl+Page Up the previous one, as in GNOME's apps, while the window is
+   in a group with other tabs. YES if the event was one of them. */
+static BOOL
+GSTabHandleShortcut (NSWindow *window, NSEvent *event)
+{
+  NSUInteger flags;
+  NSString *characters;
+  unichar c;
+  BOOL shift;
+
+  if ([event type] != NSKeyDown || [[window tabbedWindows] count] < 2)
+    {
+      return NO;
+    }
+  flags = [event modifierFlags];
+  if ((flags & NSControlKeyMask) == 0
+    || (flags & (NSAlternateKeyMask | NSCommandKeyMask)) != 0)
+    {
+      return NO;
+    }
+  characters = [event charactersIgnoringModifiers];
+  c = ([characters length] > 0) ? [characters characterAtIndex: 0] : 0;
+  shift = (flags & NSShiftKeyMask) != 0;
+  if ((c == '\t' && shift == NO) || c == NSPageDownFunctionKey)
+    {
+      [window selectNextTab: nil];
+      return YES;
+    }
+  if ((c == '\t' && shift) || c == 0x19 || c == NSPageUpFunctionKey)
+    {
+      [window selectPreviousTab: nil];
+      return YES;
+    }
+  return NO;
+}
+
+/* NSApp offers a key-down to the key window's -performKeyEquivalent:
+   before the window sends it to its first responder, so the tab
+   shortcuts are taken here, ahead of a text view (which would insert a
+   tab or scroll) and of the window's own Ctrl+Tab key view loop. */
+static BOOL
+GSTabPerformKeyEquivalent (id self, SEL _cmd, NSEvent *event)
+{
+  if (GSTabHandleShortcut (WINDOW, event))
+    {
+      return YES;
+    }
+  return ((BOOL (*)(id, SEL, NSEvent *))originalPerformKeyEquivalent) (self, _cmd, event);
+}
+
+/* And here, for a key-down sent to the window directly. */
 static void
 GSTabSendEvent (id self, SEL _cmd, NSEvent *event)
 {
-  if ([event type] == NSKeyDown && [[WINDOW tabbedWindows] count] > 1)
+  if (GSTabHandleShortcut (WINDOW, event))
     {
-      NSUInteger flags = [event modifierFlags];
-      NSString *characters = [event charactersIgnoringModifiers];
-      unichar c = ([characters length] > 0) ? [characters characterAtIndex: 0] : 0;
-
-      if ((flags & NSControlKeyMask) && (flags & (NSAlternateKeyMask | NSCommandKeyMask)) == 0)
-        {
-          BOOL shift = (flags & NSShiftKeyMask) != 0;
-
-          if ((c == '\t' && shift == NO) || c == NSPageDownFunctionKey)
-            {
-              [WINDOW selectNextTab: nil];
-              return;
-            }
-          if ((c == '\t' && shift) || c == 0x19 || c == NSPageUpFunctionKey)
-            {
-              [WINDOW selectPreviousTab: nil];
-              return;
-            }
-        }
+      return;
     }
   ((void (*)(id, SEL, NSEvent *))originalSendEvent) (self, _cmd, event);
+}
+
+/* Closing the selected tab shows its neighbour first, so the app never
+   sees a moment with no window on screen: NSApplication decides at
+   NSWindowWillCloseNotification, from the windows on screen, whether the
+   last window closed (and so whether to terminate, for apps whose
+   -applicationShouldTerminateAfterLastWindowClosed: says YES). The
+   window leaves its group before it closes. */
+static void
+GSTabClose (id self, SEL _cmd)
+{
+  GSWindowTabbingState *state = GSTabState (WINDOW, NO);
+  NSWindowTabGroup *group = (state != nil) ? state->group : nil;
+
+  if (group != nil && [[group windows] count] > 1)
+    {
+      RETAIN (group);
+      [group removeWindow: WINDOW];
+      RELEASE (group);
+    }
+  ((void (*)(id, SEL))originalClose) (self, _cmd);
 }
 
 static BOOL
@@ -813,6 +868,9 @@ GSWindowTabbingInstall (void)
   GSTabHook (window, @selector(setDocumentEdited:),
              (IMP)GSTabSetDocumentEdited, &originalSetDocumentEdited);
   GSTabHook (window, @selector(sendEvent:), (IMP)GSTabSendEvent, &originalSendEvent);
+  GSTabHook (window, @selector(performKeyEquivalent:),
+             (IMP)GSTabPerformKeyEquivalent, &originalPerformKeyEquivalent);
+  GSTabHook (window, @selector(close), (IMP)GSTabClose, &originalClose);
   GSTabHook (window, @selector(validateUserInterfaceItem:),
              (IMP)GSTabValidateUserInterfaceItem, &originalValidateUserInterfaceItem);
   GSTabHook (window, @selector(dealloc), (IMP)GSTabWindowDealloc, &originalWindowDealloc);

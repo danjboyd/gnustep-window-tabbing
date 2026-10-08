@@ -405,6 +405,8 @@ GSTabWindowAt (NSArray *windows, NSUInteger index)
 
 - (NSString *) title
 {
+  NSString *filename;
+
   if (_title != nil)
     {
       return _title;
@@ -412,6 +414,23 @@ GSTabWindowAt (NSArray *windows, NSUInteger index)
   if (_attributedTitle != nil)
     {
       return [_attributedTitle string];
+    }
+  /* A document's file name, as macOS shows it: GNUstep's
+     -setTitleWithRepresentedFilename: also puts its folder in the
+     window's title ("Notes.txt  --  /tmp"). Only while the title is that
+     one: GNUstep's default represented filename is "Window", and a title
+     the app sets afterwards wins. */
+  filename = [(id <GSWindowTabbable>)_window representedFilename];
+  if ([filename length] > 0)
+    {
+      NSString *name = [filename lastPathComponent];
+      NSString *fileTitle = [NSString stringWithFormat: @"%@  --  %@", name,
+        [[filename stringByDeletingLastPathComponent] stringByAbbreviatingWithTildeInPath]];
+
+      if ([[_window title] isEqualToString: fileTitle])
+        {
+          return name;
+        }
     }
   return [_window title];
 }
