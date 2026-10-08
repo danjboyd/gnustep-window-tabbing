@@ -133,13 +133,19 @@ fromTab (NSWindow *window, NSUInteger index, CGFloat dx, CGFloat dy)
 }
 
 static NSEvent *
-wheel (NSWindow *window, NSPoint inWindow, CGFloat deltaY)
+wheelBy (NSWindow *window, NSPoint inWindow, CGFloat deltaX, CGFloat deltaY)
 {
   return [NSEvent mouseEventWithType: NSScrollWheel location: inWindow
                        modifierFlags: 0 timestamp: 0
                         windowNumber: [window windowNumber] context: nil
                          eventNumber: 0 clickCount: 1 pressure: 1.0
-                        buttonNumber: 0 deltaX: 0.0 deltaY: deltaY deltaZ: 0.0];
+                        buttonNumber: 0 deltaX: deltaX deltaY: deltaY deltaZ: 0.0];
+}
+
+static NSEvent *
+wheel (NSWindow *window, NSPoint inWindow, CGFloat deltaY)
+{
+  return wheelBy (window, inWindow, 0.0, deltaY);
 }
 
 int
@@ -356,6 +362,14 @@ main (int argc, char **argv)
             "one notch as far as GTK's: the visible width to the power 2/3");
       [bar scrollWheel: wheel ([bar window], [bar convertPoint: NSMakePoint (NSMidX (tabs), 10.0) toView: nil], 100.0)];
       PASS ([bar scrollOffset] == 0.0, "but no further than the first tab");
+      [bar scrollWheel: wheel ([bar window], [bar convertPoint: NSMakePoint (NSMidX (tabs), 10.0) toView: nil], -1.0)];
+      PASS ([bar scrollOffset] > 0.0, "the wheel turned down scrolls the other way, to the right");
+      [bar setScrollOffset: 0.0];
+      [bar scrollWheel: wheelBy ([bar window], [bar convertPoint: NSMakePoint (NSMidX (tabs), 10.0) toView: nil], 1.0, 0.0)];
+      PASS ([bar scrollOffset] > 0.0, "the wheel tilted right (deltaX > 0) scrolls to the right");
+      offset = [bar scrollOffset];
+      [bar scrollWheel: wheelBy ([bar window], [bar convertPoint: NSMakePoint (NSMidX (tabs), 10.0) toView: nil], -1.0, 0.0)];
+      PASS ([bar scrollOffset] < offset, "and tilted left, to the left");
       /* The last tab is out of sight now; select the first, then it. */
       [[first tabGroup] setSelectedWindow: first];
       spin ();

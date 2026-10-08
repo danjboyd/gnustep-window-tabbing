@@ -1073,14 +1073,19 @@ GSWindowTabScreenPoint(NSEvent *event)
     }
 }
 
-/* The wheel scrolls tabs that don't fit, either way it turns. */
+/* The wheel scrolls tabs that don't fit, either way it turns: down or
+   right shows the tabs further right, as GTK's.  libs-back's X11 and
+   Windows servers both give a positive deltaX for the wheel tilted
+   right (X11's button 7, WM_MOUSEHWHEEL's positive delta), and a
+   positive deltaY for the wheel turned up, as NSScrollView reads
+   them. */
 - (void) scrollWheel: (NSEvent *)event
 {
   CGFloat delta = [event deltaX];
 
   if (delta == 0.0)
     {
-      delta = [event deltaY];
+      delta = -[event deltaY];
     }
   if ([self maximumScrollOffset] <= 0.0 || delta == 0.0)
     {
@@ -1088,7 +1093,7 @@ GSWindowTabScreenPoint(NSEvent *event)
       return;
     }
   [self setScrollOffset: _scrollOffset
-    - delta * GSWindowTabScrollStep(NSWidth([self tabsRect]))];
+    + delta * GSWindowTabScrollStep(NSWidth([self tabsRect]))];
 }
 
 - (BOOL) acceptsFirstMouse: (NSEvent *)event

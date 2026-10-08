@@ -1,5 +1,12 @@
 2026-10-08  Daniel Boyd  <danieljboyd@icloud.com>
 
+	* Source/GSWindowTabBarView.m ([GSWindowTabBarView -scrollWheel:]):
+	The wheel tilted right scrolls to the right: libs-back gives a
+	positive deltaX for it on X11 and Windows, as NSScrollView reads it.
+	* Tests/gui/NSWindow/tabbing_drag.m: Both wheels, both ways.
+
+2026-10-08  Daniel Boyd  <danieljboyd@icloud.com>
+
 	* Source/GSWindowTabbingWindow.m ([NSWindow
 	-_tabbingDecorationsDidChangeFromFrame:]): New: a window with other
 	tabs keeps its frame when an in-window menu bar or a toolbar comes
