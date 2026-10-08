@@ -228,6 +228,35 @@ main (int argc, char **argv)
       PASS_EQUAL (titles ([[a tabGroup] windows]), ([NSArray arrayWithObjects: @"B", @"C", @"A", nil]),
                   "Escape cancels a drag");
 
+      /* A lost press (the window system took the pointer, and the
+         button went up elsewhere): the pointer then moves with no button
+         down.  That cancels the drag; a release after it is not the
+         drag's. */
+      {
+        GSWindowTabBarView *bar = (GSWindowTabBarView *)GSWindowTabBarViewForWindow (a);
+        NSRect tab = [bar convertRect: [bar rectForTabAtIndex: 2] toView: nil];
+        NSPoint start = NSMakePoint (NSMidX (tab) - 20.0, NSMidY (tab));
+        NSPoint far = [a convertScreenToBase: fromTab (a, 2, -2.0 * step, 0.0)];
+        NSEvent *left;
+
+        while ([NSApp nextEventMatchingMask: NSAnyEventMask untilDate: [NSDate distantPast]
+                                     inMode: NSEventTrackingRunLoopMode dequeue: YES] != nil)
+          {
+          }
+        [NSApp postEvent: mouse (NSLeftMouseDragged, a, NSMakePoint (start.x - 20.0, start.y)) atStart: NO];
+        [NSApp postEvent: mouse (NSLeftMouseDragged, a, far) atStart: NO];
+        [NSApp postEvent: mouse (NSMouseMoved, a, far) atStart: NO];
+        [NSApp postEvent: mouse (NSLeftMouseUp, a, far) atStart: NO];
+        [bar mouseDown: mouse (NSLeftMouseDown, a, start)];
+        left = [NSApp nextEventMatchingMask: NSAnyEventMask untilDate: [NSDate distantPast]
+                                     inMode: NSEventTrackingRunLoopMode dequeue: YES];
+        PASS_EQUAL (titles ([[a tabGroup] windows]), ([NSArray arrayWithObjects: @"B", @"C", @"A", nil]),
+                    "a pointer moved with no button down cancels a drag");
+        PASS ([bar isDraggingTab] == NO && left != nil && [left type] == NSMouseMoved,
+              "the drag is over, and the move is put back for the app");
+        spin ();
+      }
+
       /* Under the drag threshold: a click, which selects. */
       path[0] = fromTab (a, 0, 3.0, 2.0);
       dragTab (a, 0, path, 1, NO);

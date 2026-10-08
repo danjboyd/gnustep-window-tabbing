@@ -76,6 +76,31 @@ GSWindowTabScreenPoint(NSEvent *event)
 }
 
 /* Used before they are defined. */
+/* The events that tell a press tracked by the bar it has ended without
+   its release reaching the app: the window system took the pointer away
+   (on Windows, lost capture; on X11, another client's grab) and the
+   button went up elsewhere.  Then the pointer moves with no button down,
+   or a new press starts.  Such an event ends the tracking as a cancel,
+   and is put back for the app to handle. */
+static const NSUInteger GSWindowTabLostPressMask = NSMouseMovedMask
+  | NSLeftMouseDownMask | NSRightMouseDownMask | NSOtherMouseDownMask;
+
+static BOOL
+GSWindowTabPressWasLost(NSEvent *event)
+{
+  switch ([event type])
+    {
+      case NSMouseMoved:
+      case NSLeftMouseDown:
+      case NSRightMouseDown:
+      case NSOtherMouseDown:
+        [NSApp postEvent: event atStart: YES];
+        return YES;
+      default:
+        return NO;
+    }
+}
+
 @interface GSWindowTabBarView (Private)
 - (void) updateToolTips;
 @end
@@ -697,10 +722,11 @@ GSWindowTabScreenPoint(NSEvent *event)
 /* Buttons. */
 
 /* Tracks the button under the mouse until it's released; YES if it's
-   released inside rect. */
+   released inside rect.  A lost press is no click. */
 - (BOOL) trackButtonInRect: (NSRect)rect pressed: (BOOL *)pressed
 {
-  NSUInteger mask = NSLeftMouseUpMask | NSLeftMouseDraggedMask;
+  NSUInteger mask = NSLeftMouseUpMask | NSLeftMouseDraggedMask
+    | GSWindowTabLostPressMask;
   NSEvent *event;
   NSPoint point;
   BOOL inside = YES;
@@ -713,6 +739,11 @@ GSWindowTabScreenPoint(NSEvent *event)
                                  untilDate: [NSDate distantFuture]
                                     inMode: NSEventTrackingRunLoopMode
                                    dequeue: YES];
+      if (GSWindowTabPressWasLost(event))
+        {
+          inside = NO;
+          break;
+        }
       point = [self convertPoint: [event locationInWindow] fromView: nil];
       inside = NSPointInRect(point, rect);
       if (inside != *pressed)
@@ -975,11 +1006,11 @@ GSWindowTabScreenPoint(NSEvent *event)
 
 /* Tracks a press on the tab at index from point (in this view) until the
    button is released: a drag once it has moved far enough, which Escape
-   cancels. */
+   or a lost press cancels. */
 - (void) trackTabAtIndex: (NSUInteger)index fromPoint: (NSPoint)start
 {
   NSUInteger mask = NSLeftMouseUpMask | NSLeftMouseDraggedMask
-    | NSKeyDownMask | NSPeriodicMask;
+    | NSKeyDownMask | NSPeriodicMask | GSWindowTabLostPressMask;
   CGFloat grab = start.x - NSMinX([self rectForTabAtIndex: index]);
   NSPoint press = [self convertPoint: start toView: nil];
   NSPoint screen = NSZeroPoint;
@@ -996,6 +1027,11 @@ GSWindowTabScreenPoint(NSEvent *event)
                                  untilDate: [NSDate distantFuture]
                                     inMode: NSEventTrackingRunLoopMode
                                    dequeue: YES];
+      if (GSWindowTabPressWasLost(event))
+        {
+          cancelled = YES;
+          break;
+        }
       if ([event type] == NSPeriodic)
         {
           if (_dragging && _dragDetached == NO)

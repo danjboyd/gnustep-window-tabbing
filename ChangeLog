@@ -1,5 +1,15 @@
 2026-10-08  Daniel Boyd  <danieljboyd@icloud.com>
 
+	* Source/GSWindowTabBarView.m (GSWindowTabLostPressMask,
+	GSWindowTabPressWasLost): New: a move with no button down, or a new
+	press, ends a press the app never saw released.
+	([GSWindowTabBarView -trackTabAtIndex:fromPoint:]): A lost press
+	cancels a drag.
+	([GSWindowTabBarView -trackButtonInRect:pressed:]): And is no click.
+	* Tests/gui/NSWindow/tabbing_drag.m: A lost press.
+
+2026-10-08  Daniel Boyd  <danieljboyd@icloud.com>
+
 	* Source/GSWindowTabBarView.m ([GSWindowTabBarView
 	-windowForDropAtScreenPoint:]): The tab's own window hides the
 	windows behind it: over it, the tab joins nothing.
