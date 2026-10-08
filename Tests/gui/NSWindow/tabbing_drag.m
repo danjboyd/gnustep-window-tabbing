@@ -408,6 +408,41 @@ main (int argc, char **argv)
               "a tab held past the bar's end scrolls it, and drops in a slot that was out of sight");
       }
 
+      /* A close button under a scroll fade can't be clicked: a click
+         there selects (here: keeps) the tab and closes nothing. */
+      {
+        NSWindow *selected = [[first tabGroup] selectedWindow];
+        NSUInteger index = [[[first tabGroup] windows] indexOfObjectIdenticalTo: selected];
+        NSRect fade, close;
+        CGFloat target;
+
+        bar = (GSWindowTabBarView *)GSWindowTabBarViewForWindow (selected);
+        tabs = [bar tabsRect];
+        [bar setScrollOffset: 0.0];
+        close = [bar closeButtonRectForTabAtIndex: index];
+        /* Puts the close button's middle 4 points inside the right fade. */
+        target = NSMidX (close) - (NSMaxX (tabs) - 4.0);
+        [bar setScrollOffset: target];
+        fade = [bar scrollFadeRectAtEdge: NSMaxXEdge];
+        close = [bar closeButtonRectForTabAtIndex: index];
+        PASS (fabs ([bar scrollOffset] - target) < 0.5 && NSIsEmptyRect (fade) == NO
+              && NSIsEmptyRect (close) == NO && NSIntersectsRect (fade, close),
+              "the selected tab's close button is under the right scroll fade");
+        PASS (NSIsEmptyRect ([bar liveCloseButtonRectForTabAtIndex: index]),
+              "where it can't be clicked");
+        [NSApp postEvent: mouse (NSLeftMouseUp, selected,
+                                 [bar convertPoint: NSMakePoint (NSMidX (close), NSMidY (close)) toView: nil])
+                 atStart: NO];
+        [bar mouseDown: mouse (NSLeftMouseDown, selected,
+                               [bar convertPoint: NSMakePoint (NSMidX (close), NSMidY (close)) toView: nil])];
+        spin ();
+        PASS ([[[first tabGroup] windows] count] == 9 && [selected isVisible],
+              "a click on it closes nothing");
+        [bar setScrollOffset: 0.0];
+        PASS (NSIsEmptyRect ([bar scrollFadeRectAtEdge: NSMinXEdge]),
+              "at the bar's start there is no left fade");
+      }
+
       /* GSTheme's fade, over black: controlColor at the edge, clear
          inwards. */
       {

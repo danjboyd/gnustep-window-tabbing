@@ -1,5 +1,19 @@
 2026-10-08  Daniel Boyd  <danieljboyd@icloud.com>
 
+	* Source/GSWindowTabBarView.m ([GSWindowTabBarView
+	-scrollFadeRectAtEdge:]): New, from -drawScrollFades.
+	([GSWindowTabBarView -liveCloseButtonRectForTabAtIndex:]): New: no
+	close button under a scroll fade.
+	([GSWindowTabBarView -updateHover:], [GSWindowTabBarView
+	-mouseDown:]): Use it.
+	([GSWindowTabBarView -drawRect:]): Draw a dragged tab over the
+	fades.
+	* Source/GSWindowTabBarView.h: Declare them.
+	* README.md: Say so.
+	* Tests/gui/NSWindow/tabbing_drag.m: A close button under a fade.
+
+2026-10-08  Daniel Boyd  <danieljboyd@icloud.com>
+
 	* Source/GSWindowTabBarView.m ([GSWindowTabBarView -scrollWheel:]):
 	The wheel tilted right scrolls to the right: libs-back gives a
 	positive deltaX for it on X11 and Windows, as NSScrollView reads it.

@@ -87,6 +87,11 @@
 - (NSInteger) dropGapSlot;
 - (void) setDropGapSlot: (NSInteger)slot;
 - (NSRect) closeButtonRectForTabAtIndex: (NSUInteger)index;
+/* The theme's scroll fade at edge (NSMinXEdge or NSMaxXEdge), or
+   NSZeroRect when no tabs are out of sight that way. */
+- (NSRect) scrollFadeRectAtEdge: (NSRectEdge)edge;
+/* The close button where it can be clicked: NSZeroRect under a fade. */
+- (NSRect) liveCloseButtonRectForTabAtIndex: (NSUInteger)index;
 /* NSZeroRect when nothing responds to -newWindowForTab:. */
 - (NSRect) newTabButtonRect;
 /* The tab at point, or -1. */

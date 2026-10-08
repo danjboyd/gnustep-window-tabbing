@@ -502,29 +502,63 @@ GSWindowTabScreenPoint(NSEvent *event)
     }
 }
 
+/* The theme's fade at an end of the tabs' area (NSMinXEdge or
+   NSMaxXEdge), or NSZeroRect when no tabs are out of sight that way. */
+- (NSRect) scrollFadeRectAtEdge: (NSRectEdge)edge
+{
+  NSRect tabs = [self tabsRect];
+  CGFloat width;
+
+  width = [[GSTheme theme] windowTabBarScrollFadeWidthForWindow: _tabWindow];
+  width = MIN(width, NSWidth(tabs) / 2.0);
+  if (width <= 0.0)
+    {
+      return NSZeroRect;
+    }
+  if (edge == NSMinXEdge && _scrollOffset > 0.0)
+    {
+      return NSMakeRect(NSMinX(tabs), 0.0, width, NSHeight(tabs));
+    }
+  if (edge == NSMaxXEdge && _scrollOffset < [self maximumScrollOffset])
+    {
+      return NSMakeRect(NSMaxX(tabs) - width, 0.0, width, NSHeight(tabs));
+    }
+  return NSZeroRect;
+}
+
+/* The close button of the tab at index, where it can be clicked: not
+   under a scroll fade, which hides it.  The tab itself can still be
+   clicked there, and scrolls into sight, as GTK's tabs do. */
+- (NSRect) liveCloseButtonRectForTabAtIndex: (NSUInteger)index
+{
+  NSRect button = [self closeButtonRectForTabAtIndex: index];
+
+  if (NSIsEmptyRect(button)
+    || NSIntersectsRect(button, [self scrollFadeRectAtEdge: NSMinXEdge])
+    || NSIntersectsRect(button, [self scrollFadeRectAtEdge: NSMaxXEdge]))
+    {
+      return NSZeroRect;
+    }
+  return button;
+}
+
 /* The theme's fade at each end where more tabs are out of sight. */
 - (void) drawScrollFades
 {
   GSTheme *theme = [GSTheme theme];
-  NSRect tabs = [self tabsRect];
-  CGFloat width = [theme windowTabBarScrollFadeWidthForWindow: _tabWindow];
+  NSRect rect;
 
-  width = MIN(width, NSWidth(tabs) / 2.0);
-  if (width <= 0.0)
+  rect = [self scrollFadeRectAtEdge: NSMinXEdge];
+  if (NSIsEmptyRect(rect) == NO)
     {
-      return;
-    }
-  if (_scrollOffset > 0.0)
-    {
-      [theme drawWindowTabBarScrollFadeInRect:
-        NSMakeRect(NSMinX(tabs), 0.0, width, NSHeight(tabs))
+      [theme drawWindowTabBarScrollFadeInRect: rect
                                          edge: NSMinXEdge
                                        window: _tabWindow];
     }
-  if (_scrollOffset < [self maximumScrollOffset])
+  rect = [self scrollFadeRectAtEdge: NSMaxXEdge];
+  if (NSIsEmptyRect(rect) == NO)
     {
-      [theme drawWindowTabBarScrollFadeInRect:
-        NSMakeRect(NSMaxX(tabs) - width, 0.0, width, NSHeight(tabs))
+      [theme drawWindowTabBarScrollFadeInRect: rect
                                          edge: NSMaxXEdge
                                        window: _tabWindow];
     }
@@ -552,7 +586,8 @@ GSWindowTabScreenPoint(NSEvent *event)
 }
 
 /* The tabs are clipped to their area, so scrolled ones don't run under
-   the "+" button; a dragged tab is drawn last, over the others. */
+   the "+" button; a dragged tab is drawn last, over the others and the
+   scroll fades. */
 - (void) drawRect: (NSRect)rect
 {
   NSUInteger count = [self numberOfTabs];
@@ -573,11 +608,11 @@ GSWindowTabScreenPoint(NSEvent *event)
           [self drawTabAtIndex: i];
         }
     }
+  [self drawScrollFades];
   if (_dragging && _dragDetached == NO && _dragIndex < count)
     {
       [self drawTabAtIndex: _dragIndex];
     }
-  [self drawScrollFades];
   [NSGraphicsContext restoreGraphicsState];
   if (NSIsEmptyRect([self newTabButtonRect]) == NO)
     {
@@ -621,7 +656,7 @@ GSWindowTabScreenPoint(NSEvent *event)
 {
   NSInteger tab = [self tabIndexAtPoint: point];
   BOOL closeHovered = (tab >= 0
-    && NSPointInRect(point, [self closeButtonRectForTabAtIndex: tab]));
+    && NSPointInRect(point, [self liveCloseButtonRectForTabAtIndex: tab]));
   BOOL newTabHovered = NSPointInRect(point, [self newTabButtonRect]);
 
   if (tab != _hoveredTab || closeHovered != _closeHovered
@@ -1042,7 +1077,7 @@ GSWindowTabScreenPoint(NSEvent *event)
       [self pressNewTabButton];
     }
   else if (tab >= 0
-    && NSPointInRect(point, [self closeButtonRectForTabAtIndex: tab]))
+    && NSPointInRect(point, [self liveCloseButtonRectForTabAtIndex: tab]))
     {
       [self pressCloseButtonOfTabAtIndex: tab];
     }

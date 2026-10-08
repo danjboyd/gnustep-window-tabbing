@@ -132,12 +132,13 @@ overrides what it draws differently. Each gets the tab bar's window.
 - **Close button:** `-windowTabCloseButtonRectForTabRect:state:window:`
   returns its rect in the tab, or `NSZeroRect` for none in that state (the
   default shows it on the selected tab and the one under the pointer). Hit
-  testing uses the same rect.
+  testing uses the same rect, except under a scroll fade, where the
+  button can't be clicked (the tab itself still can).
 - **Titles:** `-drawWindowTab:…` draws the title; `GSWindowTabFittedTitle()`
   shortens one with an ellipsis to fit a width.
 - **Scroll fades:** at an end of the tabs' area where tabs are scrolled
   out of sight, the bar asks for `-drawWindowTabBarScrollFadeInRect:…`,
-  over the tabs, in a rect as wide as
+  over the tabs (but under a tab being dragged), in a rect as wide as
   `-windowTabBarScrollFadeWidthForWindow:` at that edge (`NSMinXEdge`
   or `NSMaxXEdge`). The default fades `controlColor` in towards the edge.
 - **Drops from another window:** while a tab pulled out of one window is
