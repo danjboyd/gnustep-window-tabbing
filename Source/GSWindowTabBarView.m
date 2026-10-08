@@ -847,7 +847,9 @@ GSWindowTabScreenPoint(NSEvent *event)
 
 /* The window whose tabs the tab would join when dropped at screen: the
    front window under the pointer, if the pointer is over its drop zone
-   and the two can be tabbed together; nil otherwise. */
+   and the two can be tabbed together; nil otherwise.  The tab's own
+   window is one of them: over it, the pointer is over no window the tab
+   could join, even if one is behind it. */
 - (NSWindow *) windowForDropAtScreenPoint: (NSPoint)screen
 {
   NSArray *windows = [NSApp orderedWindows];
@@ -858,12 +860,12 @@ GSWindowTabScreenPoint(NSEvent *event)
     {
       NSWindow *window = [windows objectAtIndex: i];
 
-      if (window == _tabWindow || [window isVisible] == NO
+      if ([window isVisible] == NO
         || NSPointInRect(screen, [window frame]) == NO)
         {
           continue;
         }
-      if ([window _tabbingGroup] == group
+      if (window == _tabWindow || [window _tabbingGroup] == group
         || NSPointInRect(screen, [self dropZoneOfWindow: window]) == NO
         || [_tabWindow _canBeTabbedWith: window] == NO)
         {

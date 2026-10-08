@@ -1,6 +1,13 @@
 2026-10-08  Daniel Boyd  <danieljboyd@icloud.com>
 
 	* Source/GSWindowTabBarView.m ([GSWindowTabBarView
+	-windowForDropAtScreenPoint:]): The tab's own window hides the
+	windows behind it: over it, the tab joins nothing.
+	* Tests/gui/NSWindow/tabbing_drag.m: A window behind the tab's.
+
+2026-10-08  Daniel Boyd  <danieljboyd@icloud.com>
+
+	* Source/GSWindowTabBarView.m ([GSWindowTabBarView
 	-scrollFadeRectAtEdge:]): New, from -drawScrollFades.
 	([GSWindowTabBarView -liveCloseButtonRectForTabAtIndex:]): New: no
 	close button under a scroll fade.

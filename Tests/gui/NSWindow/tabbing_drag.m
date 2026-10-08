@@ -299,6 +299,39 @@ main (int argc, char **argv)
       PASS ([[d tabGroup] selectedWindow] == d && [d isVisible],
             "its old group's other tab is shown in its place");
 
+      /* Over its own window, which hides a window that could take it:
+         that one is behind, so the tab gets a window of its own. */
+      {
+        NSWindow *h = makeWindow (@"H", @"doc", NSMakeRect (100, 100, 600, 300));
+        NSWindow *i = makeWindow (@"I", @"doc", NSMakeRect (100, 100, 600, 300));
+        NSWindow *behind = makeWindow (@"Behind", @"doc", NSMakeRect (150, 100, 500, 200));
+        NSPoint drop;
+        NSArray *ordered;
+
+        [behind orderFront: nil];
+        [h makeKeyAndOrderFront: nil];
+        [h addTabbedWindow: i ordered: NSWindowAbove];
+        [[h tabGroup] setSelectedWindow: i];
+        spin ();
+        /* In Behind's title strip, which is inside I's frame. */
+        drop = NSMakePoint (NSMidX ([behind frame]), NSMaxY ([behind frame]) - 10.0);
+        ordered = [NSApp orderedWindows];
+        PASS (NSPointInRect (drop, [i frame])
+              && [ordered indexOfObjectIdenticalTo: i] < [ordered indexOfObjectIdenticalTo: behind],
+              "a window that could take a tab is behind the tab's window, under the pointer");
+        path[0] = fromTab (i, 1, 20.0, 0.0);
+        path[1] = fromTab (i, 1, 30.0, -80.0);
+        path[2] = drop;
+        dragTab (i, 1, path, 3, NO);
+        PASS ([[[behind tabGroup] windows] count] == 1
+              && [[[h tabGroup] windows] count] == 1 && [[[i tabGroup] windows] count] == 1,
+              "a tab dropped over its own window doesn't join the window hidden behind it");
+        [h close];
+        [i close];
+        [behind close];
+        spin ();
+      }
+
       /* Onto another window's tab bar: in the slot under the pointer, and
          the gap opened there for it closes on the drop. */
       f = makeWindow (@"F", @"doc", NSMakeRect (100, 400, 600, 300));
