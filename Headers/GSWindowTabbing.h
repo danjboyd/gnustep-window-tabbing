@@ -178,9 +178,10 @@ typedef unsigned int GSWindowTabState;
 @end
 
 /* Installs the API and the theme defaults, for what NSWindow and
-   GSTheme don't have already. Call it once, early (a theme from its
-   -activate or init; an app from main()); later calls do nothing. Returns
-   NO if libs-gui already has window tabbing. */
+   GSTheme don't have already. Call it once, early: a theme from its
+   -activate, an app from main() after [NSApplication sharedApplication]
+   (GSTheme loads the user's theme, which may need the backend). Later
+   calls do nothing. Returns NO if libs-gui already has window tabbing. */
 GS_EXPORT BOOL GSWindowTabbingInstall (void);
 
 /* The tab bar's view for a window, for a theme whose placement is

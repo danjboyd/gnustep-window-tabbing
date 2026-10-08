@@ -147,6 +147,26 @@ main (int argc, char **argv)
       PASS ([[a tabGroup] selectedWindow] == a && [a isVisible] && [b isVisible] == NO,
             "ordering a hidden tab in (the Windows menu) selects it");
 
+      {
+        NSMenu *windowsMenu = AUTORELEASE ([[NSMenu alloc] initWithTitle: @"Window"]);
+        NSArray *items;
+        BOOL hasA = NO, hasB = NO;
+        NSUInteger i;
+
+        [NSApp setWindowsMenu: windowsMenu];
+        [NSApp addWindowsItem: a title: [a title] filename: NO];
+        [NSApp addWindowsItem: b title: [b title] filename: NO];
+        items = [windowsMenu itemArray];
+        for (i = 0; i < [items count]; i++)
+          {
+            id target = [[items objectAtIndex: i] target];
+
+            hasA = hasA || target == a;
+            hasB = hasB || target == b;
+          }
+        PASS (hasA && hasB, "the Windows menu lists every tab, hidden ones too");
+      }
+
       [b setTitle: @"Renamed"];
       PASS_EQUAL ([[b tab] title], @"Renamed", "a tab's title follows -setTitle:");
       [b setTitleWithRepresentedFilename: @"/tmp/Notes.txt"];

@@ -144,8 +144,9 @@ main (int argc, const char **argv)
   NSAutoreleasePool *pool = [NSAutoreleasePool new];
   TabDemoController *controller;
 
-  GSWindowTabbingInstall ();
+  /* After NSApplication: GSTheme loads the user's theme. */
   [NSApplication sharedApplication];
+  GSWindowTabbingInstall ();
   controller = [TabDemoController new];
   [NSApp setDelegate: controller];
   [NSApp setMainMenu: TabDemoMenu ()];
