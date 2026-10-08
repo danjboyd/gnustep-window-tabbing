@@ -1,4 +1,4 @@
-2026-10-08 Daniel Boyd <danieljboyd@icloud.com>
+2026-10-08  Daniel Boyd  <danieljboyd@icloud.com>
 
 	* Headers/GSWindowTabbing.h: GSWT_EXPORT, empty of dllimport, for the
 	public functions and constant, in place of GS_EXPORT: the code is
