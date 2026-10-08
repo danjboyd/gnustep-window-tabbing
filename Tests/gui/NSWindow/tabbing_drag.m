@@ -20,6 +20,21 @@
 #import "GSWindowTabbing.h"
 #import "GSWindowTabBarView.h"
 
+/* Black, with GSTheme's default scroll fade over its right half. */
+@interface FadeView : NSView
+@end
+
+@implementation FadeView
+- (void) drawRect: (NSRect)rect
+{
+  [[NSColor blackColor] set];
+  NSRectFill ([self bounds]);
+  [[GSTheme theme] drawWindowTabBarScrollFadeInRect: NSMakeRect (20, 0, 20, 20)
+                                               edge: NSMaxXEdge
+                                             window: [self window]];
+}
+@end
+
 static NSWindow *
 makeWindow (NSString *title, NSString *identifier, NSRect frame)
 {
@@ -377,6 +392,33 @@ main (int argc, char **argv)
         dragTab (first, 0, drag, 12, NO);
         PASS ([[[first tabGroup] windows] indexOfObjectIdenticalTo: first] >= visible,
               "a tab held past the bar's end scrolls it, and drops in a slot that was out of sight");
+      }
+
+      /* GSTheme's fade, over black: controlColor at the edge, clear
+         inwards. */
+      {
+        FadeView *view = [[FadeView alloc] initWithFrame: NSMakeRect (0, 0, 40, 20)];
+        NSBitmapImageRep *rep;
+        NSColor *control = [[NSColor controlColor]
+          colorUsingColorSpaceName: NSCalibratedRGBColorSpace];
+        NSColor *edge, *middle, *inside, *black;
+
+        [[first contentView] addSubview: view];
+        [first display];
+        rep = [view bitmapImageRepForCachingDisplayInRect: [view bounds]];
+        [view cacheDisplayInRect: [view bounds] toBitmapImageRep: rep];
+        black = [[rep colorAtX: 5 y: 10] colorUsingColorSpaceName: NSCalibratedRGBColorSpace];
+        inside = [[rep colorAtX: 20 y: 10] colorUsingColorSpaceName: NSCalibratedRGBColorSpace];
+        middle = [[rep colorAtX: 30 y: 10] colorUsingColorSpaceName: NSCalibratedRGBColorSpace];
+        edge = [[rep colorAtX: 39 y: 10] colorUsingColorSpaceName: NSCalibratedRGBColorSpace];
+        PASS (fabs ([edge redComponent] - [control redComponent]) < 0.05
+              && fabs ([edge blueComponent] - [control blueComponent]) < 0.05
+              && [black redComponent] < 0.05 && [inside redComponent] < 0.1
+              && [middle redComponent] > 0.15
+              && [middle redComponent] < [control redComponent] - 0.15,
+              "GSTheme's scroll fade draws the bar's colour at the edge, clear inwards");
+        [view removeFromSuperview];
+        [view release];
       }
     }
   END_SET ("scrolling the bar")

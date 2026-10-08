@@ -283,12 +283,14 @@ GSWindowTabDrawTitle(NSString *title, NSRect rect, GSWindowTabState state)
 }
 
 /* The bar's colour, opaque at the edge and clear inwards, over the tabs
-   that run out of sight. */
+   that run out of sight.  In RGB: NSGradient draws nothing from a named
+   colour such as controlColor. */
 - (void) drawWindowTabBarScrollFadeInRect: (NSRect)rect
                                      edge: (NSRectEdge)edge
                                    window: (NSWindow *)window
 {
-  NSColor *colour = [NSColor controlColor];
+  NSColor *colour = [[NSColor controlColor]
+    colorUsingColorSpaceName: NSCalibratedRGBColorSpace];
   NSGradient *gradient;
 
   gradient = [[NSGradient alloc]
