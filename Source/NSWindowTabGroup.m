@@ -304,7 +304,10 @@ GSTabGroupWindowAt(NSArray *windows, NSUInteger index)
   maximized = [previous _tabbingIsMaximized];
   key = [previous isKeyWindow];
   [previous _tabbingHide];
-  [window _tabbingShowWithFrame: frame maximized: maximized makeKey: key];
+  [window _tabbingShowWithFrame: frame
+                      maximized: maximized
+                        makeKey: key
+                      inPlaceOf: previous];
 }
 
 /* The window that takes the place of the window at index when it
@@ -353,7 +356,8 @@ GSTabGroupWindowAt(NSArray *windows, NSUInteger index)
           _selectedWindow = neighbour;
           [neighbour _tabbingShowWithFrame: [window frame]
                                  maximized: [window _tabbingIsMaximized]
-                                   makeKey: [window isKeyWindow]];
+                                   makeKey: [window isKeyWindow]
+                                 inPlaceOf: window];
         }
       else
         {

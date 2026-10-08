@@ -91,6 +91,19 @@ static BOOL installed = NO;
   return GSWindowTabBarViewForWindow(window);
 }
 
+/* NSWindowDidMoveNotification and NSWindowDidResizeNotification, for any
+   window: where un-maximizing a tab shown in its place returns.
+   Upstream, a line in -[NSWindow setFrame:display:]'s callers. */
++ (void) _windowFrameDidChange: (NSNotification *)notification
+{
+  NSWindow *window = [notification object];
+
+  if ([window isKindOfClass: [NSWindow class]] && [window isVisible])
+    {
+      [window _tabbingNoteNormalFrame];
+    }
+}
+
 - (void) dealloc
 {
   RELEASE(identifier);
@@ -141,7 +154,8 @@ GSWindowTabbingForgetWindow(NSWindow *window)
    withdrawn (ordered out), and the window manager reads _NET_WM_STATE
    when it maps one, so the property itself is changed (EWMH's rule for
    withdrawn windows).
-   Windows: IsZoomed(), and ShowWindow() once the window is shown. */
+   Windows: IsZoomed(), and SetWindowPlacement() once the window is
+   shown. */
 
 #if defined(GSWT_HAVE_X11)
 typedef Atom (*GSWTInternAtom)(Display *, const char *, Bool);
@@ -303,15 +317,83 @@ GSWindowTabbingWillShowMaximized(NSWindow *window, BOOL maximized)
 #endif
 }
 
+/* X11: a window is shown maximized by mapping it at its normal frame
+   with _NET_WM_STATE saying maximized (GSWindowTabbingWillShowMaximized):
+   the window manager maximizes it as it maps it, and keeps the frame it
+   was mapped at as the one to restore.  Mapped at the maximized frame,
+   un-maximizing it left it filling the screen.
+   Windows: the window is shown at frame, and the restore rect comes from
+   previous's placement in GSWindowTabbingDidShowMaximized. */
+NSRect
+GSWindowTabbingFrameToShow(NSWindow *window, NSRect frame, BOOL maximized,
+                           NSRect normal, BOOL hasNormal)
+{
+#if defined(GSWT_HAVE_X11)
+  if (maximized && hasNormal)
+    {
+      return normal;
+    }
+#endif
+  return frame;
+}
+
+/* Windows: the window takes previous's restore rect (rcNormalPosition,
+   which Windows keeps while it is hidden) with the maximized or normal
+   state, in one SetWindowPlacement().  ShowWindow(SW_MAXIMIZE) on a
+   window already at the maximized frame made that frame its restore
+   rect.  Showing a window maximized activates it, so the window that was
+   in front gets the front back when the tab wasn't to be key. */
 void
-GSWindowTabbingDidShowMaximized(NSWindow *window, BOOL maximized)
+GSWindowTabbingDidShowMaximized(NSWindow *window, BOOL maximized,
+                                NSWindow *previous, BOOL makeKey)
 {
 #if defined(_WIN32)
   HWND hwnd = (HWND)(intptr_t)[window windowNumber];
+  HWND front;
+  WINDOWPLACEMENT placement;
+  WINDOWPLACEMENT from;
+  BOOL hasNormal = NO;
+  BOOL zoomed;
 
-  if ([window windowNumber] > 0 && (IsZoomed(hwnd) ? YES : NO) != maximized)
+  if ([window windowNumber] <= 0)
     {
-      ShowWindow(hwnd, maximized ? SW_MAXIMIZE : SW_RESTORE);
+      return;
+    }
+  placement.length = sizeof(placement);
+  if (GetWindowPlacement(hwnd, &placement) == 0)
+    {
+      return;
+    }
+  if (previous != nil && [previous windowNumber] > 0)
+    {
+      from.length = sizeof(from);
+      hasNormal = (GetWindowPlacement((HWND)(intptr_t)[previous windowNumber],
+                                      &from) != 0);
+    }
+  zoomed = (IsZoomed(hwnd) ? YES : NO);
+  if (zoomed == maximized && (maximized == NO || hasNormal == NO))
+    {
+      return;
+    }
+  if (hasNormal)
+    {
+      placement.rcNormalPosition = from.rcNormalPosition;
+    }
+  placement.flags = 0;
+  if (maximized)
+    {
+      placement.showCmd = SW_SHOWMAXIMIZED;
+    }
+  else
+    {
+      placement.showCmd = makeKey ? SW_SHOWNORMAL : SW_SHOWNOACTIVATE;
+    }
+  front = GetForegroundWindow();
+  SetWindowPlacement(hwnd, &placement);
+  if (maximized && makeKey == NO && front != NULL && front != hwnd
+    && GetForegroundWindow() == hwnd)
+    {
+      SetForegroundWindow(front);
     }
 #endif
 }
@@ -687,6 +769,16 @@ GSWindowTabbingInstall(void)
   GSWindowTabbingAddMissingMethods(NSClassFromString(@"GSWindowTabbingTheme"),
                                    [GSTheme class]);
   GSWindowTabbingWrapMethods();
+  [[NSNotificationCenter defaultCenter]
+    addObserver: [GSWindowTabbingState class]
+       selector: @selector(_windowFrameDidChange:)
+           name: NSWindowDidMoveNotification
+         object: nil];
+  [[NSNotificationCenter defaultCenter]
+    addObserver: [GSWindowTabbingState class]
+       selector: @selector(_windowFrameDidChange:)
+           name: NSWindowDidResizeNotification
+         object: nil];
   return YES;
 #endif /* GS_HAS_WINDOW_TABBING */
 }

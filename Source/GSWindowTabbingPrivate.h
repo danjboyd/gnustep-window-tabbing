@@ -52,10 +52,12 @@
    state is its frame, which the group carries anyway. */
 - (BOOL) _tabbingIsMaximized;
 /* Puts the window on screen at frame, maximized or not, key if makeKey,
-   as the group's selected window. */
+   as the group's selected window, in place of previous (the window it
+   takes over from, which un-maximizing it returns to the frame of). */
 - (void) _tabbingShowWithFrame: (NSRect)frame
                      maximized: (BOOL)maximized
-                       makeKey: (BOOL)makeKey;
+                       makeKey: (BOOL)makeKey
+                     inPlaceOf: (id)previous;
 /* Takes it off screen while it stays in its group. */
 - (void) _tabbingHide;
 /* The group's windows, selection or bar changed: redraw the bar and
@@ -105,6 +107,10 @@ enum
   /* The window has been ordered in at least once: only a window shown
      for the first time joins a group automatically. */
   BOOL shown;
+  /* Where it last was while the window manager didn't have it
+     maximized: where un-maximizing a tab shown in its place returns. */
+  NSRect normalFrame;
+  BOOL hasNormalFrame;
 }
 @end
 
@@ -117,12 +123,18 @@ void GSWindowTabbingForgetWindow(NSWindow *window);
 
 /* The window manager's maximized state, from GSWindowTabbingInstall.m
    (upstream: the display server's).  GSWindowTabbingWindowIsMaximized
-   sets *known to NO where it can't be told.  WillShow is called on a
-   window the group is about to show (ordered out), DidShow once it is
-   on screen. */
+   sets *known to NO where it can't be told.  FrameToShow gives the frame
+   to put a window the group is about to show at, before WillShow is
+   called on it (ordered out), and DidShow once it is on screen, in place
+   of previous (nil for none); normal is where un-maximizing it should
+   return (hasNormal NO when that isn't known). */
 BOOL GSWindowTabbingWindowIsMaximized(NSWindow *window, BOOL *known);
+NSRect GSWindowTabbingFrameToShow(NSWindow *window, NSRect frame,
+                                  BOOL maximized, NSRect normal,
+                                  BOOL hasNormal);
 void GSWindowTabbingWillShowMaximized(NSWindow *window, BOOL maximized);
-void GSWindowTabbingDidShowMaximized(NSWindow *window, BOOL maximized);
+void GSWindowTabbingDidShowMaximized(NSWindow *window, BOOL maximized,
+                                     NSWindow *previous, BOOL makeKey);
 
 /* NSWindow's private tabbing methods (GSWindowTabbingWindow.m).  The
    methods NSWindow already has call these: upstream each call is a line
@@ -150,6 +162,10 @@ void GSWindowTabbingDidShowMaximized(NSWindow *window, BOOL maximized);
 - (void) _tabbingDecorationsDidChangeFromFrame: (NSRect)frame;
 /* The height the window gives up for its tab bar (0 for none). */
 - (CGFloat) _tabBarReservedHeight;
+/* Remembers the window's frame as where un-maximizing a tab shown in
+   its place returns, while the window manager doesn't have it maximized
+   (on its being ordered in, moved or resized). */
+- (void) _tabbingNoteNormalFrame;
 /* The tab bar's view while the bar is shown, else nil. */
 - (GSWindowTabBarView *) _tabBarView;
 /* The tab bar's "+" button: what answers -newWindowForTab: for this

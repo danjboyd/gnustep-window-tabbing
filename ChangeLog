@@ -1,5 +1,32 @@
 2026-10-08  Daniel Boyd  <danieljboyd@icloud.com>
 
+	* Source/GSWindowTabbingPrivate.h (GSWindowTabbable): Replace
+	-_tabbingShowWithFrame:maximized:makeKey: with
+	-_tabbingShowWithFrame:maximized:makeKey:inPlaceOf:.
+	(GSWindowTabbingState): Add normalFrame and hasNormalFrame.
+	(GSWindowTabbingFrameToShow): Declare.
+	(GSWindowTabbingDidShowMaximized): Take the previous window and
+	makeKey.
+	([NSWindow -_tabbingNoteNormalFrame]): Declare.
+	* Source/NSWindowTabGroup.m ([NSWindowTabGroup -_switchToWindow:],
+	[NSWindowTabGroup -_windowWillLeave:]): Pass the window shown in
+	place of.
+	* Source/GSWindowTabbingWindow.m ([NSWindow
+	-_tabbingNoteNormalFrame]): New: the frame un-maximizing returns to.
+	([NSWindow -_tabbingShowWithFrame:maximized:makeKey:inPlaceOf:]): A
+	maximized tab takes the previous one's.
+	([NSWindow -_tabbingOrderWindow:]): Note it.
+	* Source/GSWindowTabbingInstall.m (GSWindowTabbingFrameToShow): New:
+	on X11 a maximized tab is mapped at the frame to restore to.
+	(GSWindowTabbingDidShowMaximized): On Windows, SetWindowPlacement()
+	with the previous window's restore rect, instead of ShowWindow().
+	([GSWindowTabbingState +_windowFrameDidChange:]): New.
+	(GSWindowTabbingInstall): Observe windows' moves and resizes.
+	* Tests/gui/NSWindowTabGroup/FakeWindow.h: The new method.
+	* Tests/gui/NSWindow/tabbing_glue.m: The frame to restore to.
+
+2026-10-08  Daniel Boyd  <danieljboyd@icloud.com>
+
 	* Source/GSWindowTabbingWindow.m ([NSWindow -_tabbingNewTabTarget]):
 	New: what answers -newWindowForTab: in this window's own responder
 	chain, key or not.

@@ -20,6 +20,7 @@
 #import <AppKit/AppKit.h>
 #import "GSWindowTabbing.h"
 #import "GSWindowTabBarView.h"
+#import "GSWindowTabbingPrivate.h"
 #import <GNUstepGUI/GSDisplayServer.h>
 
 #if !defined(_WIN32) && defined(__has_include)
@@ -562,14 +563,47 @@ main (int argc, char **argv)
       /* No window manager runs here: the test sets the state on the
          shown window, as one would, and reads what the code gave the
          window it shows next. */
-      setMaximized (display, a, YES);
-      [[a tabGroup] setSelectedWindow: b];
-      PASS (maximizedAtoms (display, b) == 2,
-            "a tab selected in place of a maximized window is mapped maximized (_NET_WM_STATE)");
-      setMaximized (display, b, NO);
-      [[a tabGroup] setSelectedWindow: a];
-      PASS (maximizedAtoms (display, a) == 0,
-            "one selected in place of a window that isn't maximized loses the state it had");
+      {
+        GSWindowTabbingState *sa = GSWindowTabbingStateForWindow (a, NO);
+        GSWindowTabbingState *sb;
+        NSRect big = NSMakeRect (0, 0, 1200, 800);
+        NSRect normal;
+
+        PASS (sa != nil && sa->hasNormalFrame && NSEqualRects (sa->normalFrame, [a frame]),
+              "a window on screen, not maximized, keeps its frame as the one to restore to");
+        normal = sa->normalFrame;
+        /* As a window manager maximizing it: the state, then the frame
+           (whose resize GNUstep posts as it changes it). */
+        setMaximized (display, a, YES);
+        [a setFrame: big display: NO];
+        [[NSNotificationCenter defaultCenter]
+          postNotificationName: NSWindowDidResizeNotification object: a];
+        PASS (NSEqualRects (sa->normalFrame, normal),
+              "its frame while maximized isn't");
+        [[a tabGroup] setSelectedWindow: b];
+        PASS (maximizedAtoms (display, b) == 2,
+              "a tab selected in place of a maximized window is mapped maximized (_NET_WM_STATE)");
+        sb = GSWindowTabbingStateForWindow (b, NO);
+        PASS (sb != nil && sb->hasNormalFrame && NSEqualRects (sb->normalFrame, normal),
+              "and takes the frame to restore to with it");
+        PASS (NSEqualRects (GSWindowTabbingFrameToShow (b, big, YES, normal, YES), normal)
+              && NSEqualRects (GSWindowTabbingFrameToShow (b, big, NO, normal, YES), big)
+              && NSEqualRects (GSWindowTabbingFrameToShow (b, big, YES, normal, NO), big),
+              "on X11 it is mapped at that frame, for the window manager to restore to");
+        /* The move as the window system reports it: GNUstep posts
+           NSWindowDidMoveNotification for the backend's event, which no
+           window manager sends here. */
+        [b setFrame: NSOffsetRect (normal, 10, -10) display: NO];
+        setMaximized (display, b, NO);
+        [[NSNotificationCenter defaultCenter]
+          postNotificationName: NSWindowDidMoveNotification object: b];
+        PASS (NSEqualRects (sb->normalFrame, [b frame])
+              && NSEqualRects (sb->normalFrame, normal) == NO,
+              "moved while not maximized, it keeps where it went");
+        [[a tabGroup] setSelectedWindow: a];
+        PASS (maximizedAtoms (display, a) == 0,
+              "one selected in place of a window that isn't maximized loses the state it had");
+      }
       [b close];
       [a close];
 #else

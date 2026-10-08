@@ -254,9 +254,27 @@ static NSWindow *newTabWindow = nil;
 - (void) _tabbingShowWithFrame: (NSRect)frame
                      maximized: (BOOL)maximized
                        makeKey: (BOOL)makeKey
+                     inPlaceOf: (id)previous
 {
+  GSWindowTabbingState *from = GSWindowTabbingStateForWindow(previous, NO);
+  GSWindowTabbingState *state;
+  NSRect normal = frame;
+  BOOL hasNormal = NO;
+
+  /* A maximized tab carries the group's frame from before it was
+     maximized, so un-maximizing it returns there. */
+  if (maximized && from != nil && from->hasNormalFrame)
+    {
+      normal = from->normalFrame;
+      hasNormal = YES;
+      state = GSWindowTabbingStateForWindow(self, YES);
+      state->normalFrame = normal;
+      state->hasNormalFrame = YES;
+    }
   internalOrdering++;
-  [self setFrame: frame display: NO];
+  [self setFrame: GSWindowTabbingFrameToShow(self, frame, maximized,
+                                              normal, hasNormal)
+         display: NO];
   GSWindowTabbingWillShowMaximized(self, maximized);
   if (makeKey)
     {
@@ -266,8 +284,31 @@ static NSWindow *newTabWindow = nil;
     {
       [self orderFront: nil];
     }
-  GSWindowTabbingDidShowMaximized(self, maximized);
+  GSWindowTabbingDidShowMaximized(self, maximized, previous, makeKey);
   internalOrdering--;
+}
+
+/* Remembers the window's frame as where un-maximizing returns, while
+   the window manager doesn't have it maximized; nothing where that
+   can't be told. */
+- (void) _tabbingNoteNormalFrame
+{
+  GSWindowTabbingState *state;
+  BOOL known;
+  BOOL maximized;
+
+  if ([self _canBeTabbed] == NO)
+    {
+      return;
+    }
+  maximized = GSWindowTabbingWindowIsMaximized(self, &known);
+  if (known == NO || maximized)
+    {
+      return;
+    }
+  state = GSWindowTabbingStateForWindow(self, YES);
+  state->normalFrame = [self frame];
+  state->hasNormalFrame = YES;
 }
 
 - (void) _tabbingHide
@@ -333,6 +374,7 @@ static NSWindow *newTabWindow = nil;
         }
     }
   GSWindowTabbingStateForWindow(self, YES)->shown = YES;
+  [self _tabbingNoteNormalFrame];
   return NO;
 }
 

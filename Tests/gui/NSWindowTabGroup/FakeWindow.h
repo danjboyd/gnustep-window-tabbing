@@ -60,6 +60,7 @@
 - (void) _tabbingShowWithFrame: (NSRect)f
                      maximized: (BOOL)m
                        makeKey: (BOOL)makeKey
+                     inPlaceOf: (id)previous
 {
   frame = f;
   maximized = m;
