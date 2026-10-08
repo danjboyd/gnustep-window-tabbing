@@ -30,7 +30,7 @@
 @implementation GreedyTextView
 - (BOOL) performKeyEquivalent: (NSEvent *)event
 {
-  if ([event modifierFlags] & NSControlKeyMask)
+  if ([event modifierFlags] & (NSControlKeyMask | NSCommandKeyMask))
     {
       taken++;
       return YES;
@@ -66,13 +66,15 @@ makeWindow (NSString *title, GreedyTextView **text)
   return w;
 }
 
+/* Ctrl with c, the Ctrl key arriving as mask: NSControlKeyMask, or
+   NSCommandKeyMask as GNUstep's default key mapping delivers it. */
 static NSEvent *
-ctrlKey (NSWindow *window, unichar c)
+ctrlKey (NSWindow *window, unichar c, NSUInteger mask)
 {
   NSString *s = [NSString stringWithCharacters: &c length: 1];
 
   return [NSEvent keyEventWithType: NSKeyDown location: NSZeroPoint
-                     modifierFlags: NSControlKeyMask timestamp: 0
+                     modifierFlags: mask timestamp: 0
                       windowNumber: [window windowNumber] context: nil
                         characters: s charactersIgnoringModifiers: s
                          isARepeat: NO keyCode: 0];
@@ -119,7 +121,7 @@ ctrlKey (NSWindow *window, unichar c)
 {
   PASS ([NSApp keyWindow] == b && [b firstResponder] == textB,
         "the selected tab is key, its text view has focus");
-  [NSApp sendEvent: ctrlKey (b, '\t')];
+  [NSApp sendEvent: ctrlKey (b, '\t', NSControlKeyMask)];
   PASS ([[a tabGroup] selectedWindow] == a && textB->taken == 0,
         "Ctrl+Tab selects the next tab, ahead of the focused text view");
   [a makeKeyWindow];
@@ -129,9 +131,9 @@ ctrlKey (NSWindow *window, unichar c)
 
 - (void) step4
 {
-  [NSApp sendEvent: ctrlKey (a, NSPageDownFunctionKey)];
+  [NSApp sendEvent: ctrlKey (a, NSPageDownFunctionKey, NSCommandKeyMask)];
   PASS ([[a tabGroup] selectedWindow] == b && textA->taken == 0,
-        "and Ctrl+Page Down");
+        "and Ctrl+Page Down, with Ctrl as GNUstep's default mapping delivers it (Command)");
   [self performSelector: @selector(step5) withObject: nil afterDelay: 0.3];
 }
 
