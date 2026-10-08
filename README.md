@@ -203,46 +203,76 @@ which is the only one on screen.
 
 ## Inside
 
-- `Source/GSWindowTabGroup.m`: `NSWindowTabGroup` and `NSWindowTab`, the
-  model. It sees its windows only through the `GSWindowTabbable` protocol
+The code is laid out as it would sit in libs-gui, with one file that
+exists only because it isn't there yet:
+
+| File | Upstream |
+|---|---|
+| `Headers/AppKit/NSWindowTab.h`, `NSWindowTabGroup.h` | `Headers/AppKit/`, as they are |
+| `Headers/GSWindowTabbing.h` | `NSWindow.h` (the API), `GSTheme.h` (the theme's methods) |
+| `Source/NSWindowTabGroup.m`, `NSWindowTab.m` | `Source/`, as they are |
+| `Source/GSWindowTabbingWindow.m` | `NSWindow.m`: its methods, as they are |
+| `Source/GSWindowTabbingDecorationView.m` | `GSWindowDecorationView.m`: `-_layoutTabBar` |
+| `Source/GSWindowTabBarView.m`, `GSWindowTabBarLayout.m` | `Source/GSWindowTabBarView.m` (one file) |
+| `Source/GSWindowTabbingTheme.m` | a `GSTheme` category, as it is |
+| `Source/GSWindowTabbingInstall.m` | nothing: deleted |
+
+- **The model** (`NSWindowTabGroup`, `NSWindowTab`) sees its windows
+  only through the `GSWindowTabbable` protocol
   (`Source/GSWindowTabbingPrivate.h`), so it is tested with stand-in
   windows. A group retains its windows only while it has two or more (the
   hidden ones need it); a window on its own isn't held.
-- `Source/GSWindowTabbing.m`: the `NSWindow` methods (added where missing,
-  with each window's state kept beside it in a map table), and hooks on
-  `-orderWindow:relativeTo:`, `-setTitle:`,
-  `-setTitleWithRepresentedFilename:`, `-setDocumentEdited:`, `-sendEvent:`,
-  `-performKeyEquivalent:`, `-close`, `-validateUserInterfaceItem:` and
-  `-dealloc`. The bar's row is reserved by
-  wrapping `GSWindowDecorationView`'s `-layout`,
-  `-contentRectForFrameRect:styleMask:` and
-  `-frameRectForContentRect:styleMask:`, the way the in-window menu bar and
-  the toolbar take theirs; a theme's decoration view subclass inherits it.
-- `Source/GSWindowTabBarView.m`: the bar: layout, hit testing, buttons,
-  hover, tool tips.
-- `Source/GSWindowTabbingTheme.m`: GSTheme's defaults and
-  `GSWindowTabFittedTitle()`.
-
-In libs-gui the hooks become plain code in `NSWindow.m` and
-`GSWindowDecorationView.m`, and the defaults become GSTheme's methods.
+- **The logic** is written as `NSWindow`, `GSWindowDecorationView` and
+  `GSTheme` methods, in subclasses that are never instantiated
+  (`GSWindowTabbingWindow` and the others): `GSWindowTabbingInstall()`
+  copies their methods into the real classes where those have none, so
+  `self` is always the real class, and none of them uses `super`.
+  Upstream the subclass lines go, and the methods are pasted in.
+- **The hook layer** (`GSWindowTabbingInstall.m`) is everything that is
+  only needed from outside libs-gui:
+  - each window's state, kept beside it in a map table (upstream:
+    instance variables of `NSWindow`);
+  - wrappers around `-orderWindow:relativeTo:`, `-setTitle:`,
+    `-setTitleWithRepresentedFilename:`, `-setDocumentEdited:`,
+    `-performKeyEquivalent:`, `-sendEvent:`, `-close`,
+    `-validateUserInterfaceItem:` and `-dealloc`, and around
+    `GSWindowDecorationView`'s `-layout`,
+    `-contentRectForFrameRect:styleMask:` and
+    `-frameRectForContentRect:styleMask:`. Each calls one private
+    `-_tabbing...` method and then the original; its comment says the one
+    line that goes into the real method upstream;
+  - the check for two copies (an app's and its theme's).
 
 ## Building and testing
 
 ```sh
 make                 # the library (for tests); themes use GSWindowTabbing.make
-make check-model     # the model, with stand-in windows: no display needed
-make check-display   # real NSWindows; needs DISPLAY (a private Xvfb is enough)
+make check-model     # Tests/gui/NSWindowTabGroup: stand-in windows, no display
+make check-display   # Tests/gui/NSWindow: real NSWindows; needs DISPLAY
+make check           # both
 make tabdemo         # Examples/TabDemo
-Tests/Scripts/gcc-syntax-check.sh --files Source/*.m Tests/*/*.m Examples/TabDemo/main.m
+Tests/Scripts/gcc-syntax-check.sh --files Source/*.m Tests/gui/*/*.m
 ```
+
+The tests are in libs-gui's layout (`Tests/gui/<class>/`, `TestInfo`,
+`Testing.h`, skipped without a display server), so upstream they go into
+libs-gui's `Tests/gui/` as they are, the model test then linking the
+model instead of compiling it in.
 
 `check-display` should run with empty user defaults (a copy of
 GNUstep.conf whose `GNUSTEP_USER_DEFAULTS_DIR` is an empty directory,
-mode 0600, as `GNUSTEP_CONFIG_FILE`), and on a display of its own.
+mode 0600, as `GNUSTEP_CONFIG_FILE`), and on a display of its own (a
+private Xvfb is enough; no window manager is needed).
 
-The code is GNUstep style, builds with clang and passes GCC's
-Objective-C front end (no ARC, blocks, literals or dot syntax), and is
-LGPL-2.1-or-later, like libs-gui.
+The code follows GNUstep's coding standards (libs-base's
+`Documentation/coding-standards.texi`). It builds without warnings with
+clang and libobjc2 and with GCC and GNU libobjc: on 2026-10-08, GCC
+14.2 (Debian's `gobjc` and `libobjc-14-dev`) built tools-make, libs-base,
+libs-gui and libs-back (cairo) master into a scratch prefix, with
+gnustep-make configured `--with-library-combo=gnu-gnu-gnu
+--enable-native-objc-exceptions` (libs-gui's `@synchronized` needs
+native exceptions) and libs-base `--disable-libdispatch`; this library
+then built with no warnings and passed `make check` (47 and 54 tests).
 
 ## Licence and upstream
 

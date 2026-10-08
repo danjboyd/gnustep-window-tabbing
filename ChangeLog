@@ -1,0 +1,70 @@
+2026-10-08  Daniel Boyd  <danieljboyd@icloud.com>
+
+	Window tabbing: Apple's NSWindow tabbing API, drawn by GSTheme.
+	(Draft for libs-gui: the paths are where each part goes there;
+	README.md maps them to this repository's files.)
+
+	* Headers/AppKit/NSWindowTab.h,
+	* Headers/AppKit/NSWindowTabGroup.h: New files.
+	* Headers/AppKit/AppKit.h: Import them.
+	* Headers/AppKit/NSWindow.h (NSWindowTabbingMode,
+	NSWindowUserTabbingPreference): New enums.
+	([NSWindow +allowsAutomaticWindowTabbing],
+	[NSWindow +setAllowsAutomaticWindowTabbing:],
+	[NSWindow +userTabbingPreference], [NSWindow -tabbingMode],
+	[NSWindow -setTabbingMode:], [NSWindow -tabbingIdentifier],
+	[NSWindow -setTabbingIdentifier:], [NSWindow -tabbedWindows],
+	[NSWindow -tab], [NSWindow -tabGroup],
+	[NSWindow -addTabbedWindow:ordered:], [NSWindow -selectNextTab:],
+	[NSWindow -selectPreviousTab:], [NSWindow -moveTabToNewWindow:],
+	[NSWindow -mergeAllWindows:], [NSWindow -toggleTabBar:]): Declare.
+	([NSResponder -newWindowForTab:]): Declare.
+	(GSWindowTabBarDidChangeNotification): New notification.
+	(GS_HAS_WINDOW_TABBING): Define.
+	* Headers/Additions/GNUstepGUI/GSTheme.h (GSWindowTabState,
+	GSWindowTabBarPlacement): New types.
+	([GSTheme -windowTabBarHeightForWindow:],
+	[GSTheme -windowTabBarPlacementForWindow:],
+	[GSTheme -windowTabMinimumWidthForWindow:],
+	[GSTheme -windowTabMaximumWidthForWindow:],
+	[GSTheme -windowTabNewTabButtonWidthForWindow:],
+	[GSTheme -windowTabBarMarginForWindow:],
+	[GSTheme -windowTabSpacingForWindow:],
+	[GSTheme -windowTabCloseButtonRectForTabRect:state:window:],
+	[GSTheme -drawWindowTabBarBackgroundInRect:window:],
+	[GSTheme -drawWindowTab:inRect:state:window:],
+	[GSTheme -drawWindowTabCloseButtonInRect:state:window:],
+	[GSTheme -drawWindowTabNewTabButtonInRect:state:window:]): Declare.
+	(GSWindowTabBarViewForWindow, GSWindowTabFittedTitle): Declare.
+	* Source/NSWindowTab.m,
+	* Source/NSWindowTabGroup.m: New files, the model.
+	* Source/GSWindowTabBarView.h,
+	* Source/GSWindowTabBarView.m: New files, the tab bar: layout, hit
+	testing, the close and "+" buttons, hover and tool tips.
+	* Source/GSWindowTabbingPrivate.h: New file.
+	* Source/GSThemeWindowTabs.m: New file, GSTheme's default tab bar.
+	* Source/GNUmakefile: Add the new files.
+	* Source/NSWindow.m: Implement the tabbing API.
+	([NSWindow -orderWindow:relativeTo:]): A hidden tab ordered in is
+	selected; a window ordered in for the first time may join the key
+	window's group.
+	([NSWindow -setTitle:], [NSWindow -setTitleWithRepresentedFilename:],
+	[NSWindow -setDocumentEdited:]): Update the window's tab.
+	([NSWindow -performKeyEquivalent:], [NSWindow -sendEvent:]): Take
+	Ctrl+Tab, Ctrl+Shift+Tab, Ctrl+Page Up and Ctrl+Page Down while the
+	window has more than one tab.
+	([NSWindow -close]): Leave the window's group, showing the next tab
+	first.
+	([NSWindow -validateUserInterfaceItem:]): Validate the tab actions.
+	([NSWindow -dealloc]): Release the tabbing state.
+	* Source/GSWindowDecorationView.m ([GSWindowDecorationView -layout]):
+	Lay out the tab bar.
+	([GSWindowDecorationView -contentRectForFrameRect:styleMask:],
+	[GSWindowDecorationView -frameRectForContentRect:styleMask:]):
+	Reserve the tab bar's row.
+	* Tests/gui/NSWindowTabGroup/group.m,
+	* Tests/gui/NSWindowTabGroup/FakeWindow.h,
+	* Tests/gui/NSWindow/tabbing_glue.m,
+	* Tests/gui/NSWindow/tabbing_hover.m,
+	* Tests/gui/NSWindow/tabbing_layout.m,
+	* Tests/gui/NSWindow/tabbing_running.m: New tests.
