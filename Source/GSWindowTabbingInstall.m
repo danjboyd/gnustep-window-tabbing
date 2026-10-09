@@ -341,15 +341,18 @@ GSWindowTabbingFrameToShow(NSWindow *window, NSRect frame, BOOL maximized,
    which Windows keeps while it is hidden) with the maximized or normal
    state, in one SetWindowPlacement().  ShowWindow(SW_MAXIMIZE) on a
    window already at the maximized frame made that frame its restore
-   rect.  Showing a window maximized activates it, so the window that was
-   in front gets the front back when the tab wasn't to be key. */
+   rect.  Ordering a window to the top makes it the foreground window
+   (libs-back's -orderwindow::: calls SetForegroundWindow()), and so does
+   showing it maximized, so when the tab wasn't to be key the window
+   that was in front before it was ordered in (front) gets the front
+   back, maximized or not. */
 void
 GSWindowTabbingDidShowMaximized(NSWindow *window, BOOL maximized,
-                                NSWindow *previous, BOOL makeKey)
+                                NSWindow *previous, BOOL makeKey,
+                                intptr_t front)
 {
 #if defined(_WIN32)
   HWND hwnd = (HWND)(intptr_t)[window windowNumber];
-  HWND front;
   WINDOWPLACEMENT placement;
   WINDOWPLACEMENT from;
   BOOL hasNormal = NO;
@@ -360,41 +363,48 @@ GSWindowTabbingDidShowMaximized(NSWindow *window, BOOL maximized,
       return;
     }
   placement.length = sizeof(placement);
-  if (GetWindowPlacement(hwnd, &placement) == 0)
+  if (GetWindowPlacement(hwnd, &placement) != 0)
     {
-      return;
+      if (previous != nil && [previous windowNumber] > 0)
+        {
+          from.length = sizeof(from);
+          hasNormal = (GetWindowPlacement(
+            (HWND)(intptr_t)[previous windowNumber], &from) != 0);
+        }
+      zoomed = (IsZoomed(hwnd) ? YES : NO);
+      if (zoomed != maximized || (maximized && hasNormal))
+        {
+          if (hasNormal)
+            {
+              placement.rcNormalPosition = from.rcNormalPosition;
+            }
+          placement.flags = 0;
+          if (maximized)
+            {
+              placement.showCmd = SW_SHOWMAXIMIZED;
+            }
+          else
+            {
+              placement.showCmd = makeKey ? SW_SHOWNORMAL : SW_SHOWNOACTIVATE;
+            }
+          SetWindowPlacement(hwnd, &placement);
+        }
     }
-  if (previous != nil && [previous windowNumber] > 0)
+  if (makeKey == NO && front != 0 && (HWND)front != hwnd
+    && IsWindow((HWND)front) && GetForegroundWindow() == hwnd)
     {
-      from.length = sizeof(from);
-      hasNormal = (GetWindowPlacement((HWND)(intptr_t)[previous windowNumber],
-                                      &from) != 0);
+      SetForegroundWindow((HWND)front);
     }
-  zoomed = (IsZoomed(hwnd) ? YES : NO);
-  if (zoomed == maximized && (maximized == NO || hasNormal == NO))
-    {
-      return;
-    }
-  if (hasNormal)
-    {
-      placement.rcNormalPosition = from.rcNormalPosition;
-    }
-  placement.flags = 0;
-  if (maximized)
-    {
-      placement.showCmd = SW_SHOWMAXIMIZED;
-    }
-  else
-    {
-      placement.showCmd = makeKey ? SW_SHOWNORMAL : SW_SHOWNOACTIVATE;
-    }
-  front = GetForegroundWindow();
-  SetWindowPlacement(hwnd, &placement);
-  if (maximized && makeKey == NO && front != NULL && front != hwnd
-    && GetForegroundWindow() == hwnd)
-    {
-      SetForegroundWindow(front);
-    }
+#endif
+}
+
+intptr_t
+GSWindowTabbingForegroundWindow(void)
+{
+#if defined(_WIN32)
+  return (intptr_t)GetForegroundWindow();
+#else
+  return 0;
 #endif
 }
 

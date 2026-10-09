@@ -260,6 +260,7 @@ static NSWindow *newTabWindow = nil;
   GSWindowTabbingState *state;
   NSRect normal = frame;
   BOOL hasNormal = NO;
+  intptr_t front;
 
   /* A maximized tab carries the group's frame from before it was
      maximized, so un-maximizing it returns there. */
@@ -272,6 +273,7 @@ static NSWindow *newTabWindow = nil;
       state->hasNormalFrame = YES;
     }
   internalOrdering++;
+  front = GSWindowTabbingForegroundWindow();
   [self setFrame: GSWindowTabbingFrameToShow(self, frame, maximized,
                                               normal, hasNormal)
          display: NO];
@@ -284,7 +286,8 @@ static NSWindow *newTabWindow = nil;
     {
       [self orderFront: nil];
     }
-  GSWindowTabbingDidShowMaximized(self, maximized, previous, makeKey);
+  GSWindowTabbingDidShowMaximized(self, maximized, previous, makeKey,
+                                  front);
   internalOrdering--;
 }
 

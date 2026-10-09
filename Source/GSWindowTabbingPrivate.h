@@ -127,14 +127,21 @@ void GSWindowTabbingForgetWindow(NSWindow *window);
    to put a window the group is about to show at, before WillShow is
    called on it (ordered out), and DidShow once it is on screen, in place
    of previous (nil for none); normal is where un-maximizing it should
-   return (hasNormal NO when that isn't known). */
+   return (hasNormal NO when that isn't known).  front is
+   GSWindowTabbingForegroundWindow() from before the window was ordered
+   in: what DidShow gives the front back to when the window wasn't to be
+   key. */
 BOOL GSWindowTabbingWindowIsMaximized(NSWindow *window, BOOL *known);
 NSRect GSWindowTabbingFrameToShow(NSWindow *window, NSRect frame,
                                   BOOL maximized, NSRect normal,
                                   BOOL hasNormal);
 void GSWindowTabbingWillShowMaximized(NSWindow *window, BOOL maximized);
 void GSWindowTabbingDidShowMaximized(NSWindow *window, BOOL maximized,
-                                     NSWindow *previous, BOOL makeKey);
+                                     NSWindow *previous, BOOL makeKey,
+                                     intptr_t front);
+/* The window system's foreground window (Windows' HWND), 0 elsewhere. */
+intptr_t GSWindowTabbingForegroundWindow(void);
+
 
 /* NSWindow's private tabbing methods (GSWindowTabbingWindow.m).  The
    methods NSWindow already has call these: upstream each call is a line
