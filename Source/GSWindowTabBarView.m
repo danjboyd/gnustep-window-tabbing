@@ -90,6 +90,12 @@ GSWindowTabPressWasLost(NSEvent *event)
 {
   switch ([event type])
     {
+      /* libs-back's Windows server reports a lost release as a left
+         mouse-up it makes up, ahead of the move it saw it in (which it
+         may then drop as no move): no release happened here, so it ends
+         the press as a cancel and isn't put back. */
+      case NSLeftMouseUp:
+        return (GSWindowTabbingReleaseWasReal(event) == NO);
       case NSMouseMoved:
       case NSLeftMouseDown:
       case NSRightMouseDown:
@@ -766,6 +772,7 @@ GSWindowTabPressWasLost(NSEvent *event)
 
   *pressed = YES;
   [self setNeedsDisplay: YES];
+  GSWindowTabbingBeginPressWatch();
   while (1)
     {
       event = [NSApp nextEventMatchingMask: mask
@@ -789,6 +796,7 @@ GSWindowTabPressWasLost(NSEvent *event)
           break;
         }
     }
+  GSWindowTabbingEndPressWatch();
   *pressed = NO;
   [self setNeedsDisplay: YES];
   return inside;
@@ -1054,6 +1062,7 @@ GSWindowTabPressWasLost(NSEvent *event)
   NSPoint point;
 
   RETAIN(self);
+  GSWindowTabbingBeginPressWatch();
   while (1)
     {
       event = [NSApp nextEventMatchingMask: mask
@@ -1111,6 +1120,7 @@ GSWindowTabPressWasLost(NSEvent *event)
           break;
         }
     }
+  GSWindowTabbingEndPressWatch();
   if (periodic)
     {
       [NSEvent stopPeriodicEvents];

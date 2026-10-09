@@ -142,6 +142,16 @@ void GSWindowTabbingDidShowMaximized(NSWindow *window, BOOL maximized,
 /* The window system's foreground window (Windows' HWND), 0 elsewhere. */
 intptr_t GSWindowTabbingForegroundWindow(void);
 
+/* Windows: whether a left mouse-up ending a press the bar tracks was a
+   real release.  libs-back's Windows server makes one up when the
+   pointer moves with the button no longer down (capture was lost and the
+   release went elsewhere); as an event it looks like a real one.  Begin
+   and End bracket the tracking (they nest); ReleaseWasReal tells a
+   mouse-up event from that time.  Elsewhere every release is real.
+   GSWindowTabbingInstall.m. */
+void GSWindowTabbingBeginPressWatch(void);
+BOOL GSWindowTabbingReleaseWasReal(NSEvent *event);
+void GSWindowTabbingEndPressWatch(void);
 
 /* NSWindow's private tabbing methods (GSWindowTabbingWindow.m).  The
    methods NSWindow already has call these: upstream each call is a line
