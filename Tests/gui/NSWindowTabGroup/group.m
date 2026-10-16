@@ -108,6 +108,28 @@ main (int argc, char **argv)
     }
   END_SET ("ordering")
 
+  START_SET ("switching")
+    {
+      FakeWindow *a = [FakeWindow named: @"A"];
+      FakeWindow *b = [FakeWindow named: @"B"];
+      NSWindowTabGroup *group = groupWith (a);
+
+      [group addWindow: (NSWindow *)b];
+      [group setSelectedWindow: (NSWindow *)a];
+      [fakeLog removeAllObjects];
+      [group setSelectedWindow: (NSWindow *)b];
+      /* Hiding first leaves no window of the group on screen for a
+         moment, and the window manager animates both: the window
+         vanishes and reappears. */
+      PASS_EQUAL (fakeLog, ([NSArray arrayWithObjects: @"show B", @"hide A", nil]),
+                  "switching shows the new tab before hiding the old");
+      [fakeLog removeAllObjects];
+      [group addWindow: (NSWindow *)[FakeWindow named: @"C"]];
+      PASS_EQUAL (fakeLog, ([NSArray arrayWithObjects: @"show C", @"hide B", nil]),
+                  "so does adding a tab, which selects it");
+    }
+  END_SET ("switching")
+
   START_SET ("leaving and closing")
     {
       FakeWindow *a = [FakeWindow named: @"A"];
