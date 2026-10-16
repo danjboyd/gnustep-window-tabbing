@@ -12,6 +12,19 @@
 #import <Foundation/Foundation.h>
 #import "GSWindowTabbingPrivate.h"
 
+/* What the group asked of the stand-ins, in order: "show A", "hide B". */
+static NSMutableArray *fakeLog = nil;
+
+static void
+fakeLogAdd (NSString *what, NSString *name)
+{
+  if (fakeLog == nil)
+    {
+      fakeLog = [NSMutableArray new];
+    }
+  [fakeLog addObject: [NSString stringWithFormat: @"%@ %@", what, name]];
+}
+
 @interface FakeWindow : NSObject <GSWindowTabbable>
 {
 @public
@@ -66,9 +79,11 @@
   maximized = m;
   visible = YES;
   key = makeKey;
+  fakeLogAdd (@"show", name);
 }
 - (void) _tabbingHide
 {
+  fakeLogAdd (@"hide", name);
   visible = NO;
   key = NO;
 }
