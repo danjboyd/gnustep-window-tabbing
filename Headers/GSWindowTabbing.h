@@ -360,6 +360,31 @@ GSWT_EXPORT NSString *const GSWindowTabBarDidChangeNotification;
                                      edge: (NSRectEdge)edge
                                    window: (NSWindow *)window;
 
+/**
+ * Returns whether a window alone in its group shows the tab bar, one
+ * tab and the "+", while the bar is automatic (not shown or hidden with
+ * -toggleTabBar:).  The default is NO, as macOS has it: the bar shows
+ * from the second tab.  A theme for Windows 11 returns YES for a window
+ * that can be a tab and has somewhere for "+" to go, as Notepad and
+ * Terminal open with their tab strip.
+ */
+- (BOOL) windowTabBarShowsSingleTabForWindow: (NSWindow *)window;
+
+/**
+ * Makes window, a tab of previous's group, the selected one in
+ * previous's place: on screen at frame (maximized or not, key if
+ * makeKey) and previous off it.  The default puts window on screen
+ * first and then takes previous off, so the group never leaves the
+ * screen empty.  A theme may do it otherwise (a window never yet on
+ * screen set up behind previous first, say); it must end with window
+ * shown as the default does and previous hidden.
+ */
+- (void) showTabbedWindow: (NSWindow *)window
+          inPlaceOfWindow: (NSWindow *)previous
+                    frame: (NSRect)frame
+                maximized: (BOOL)maximized
+                  makeKey: (BOOL)makeKey;
+
 @end
 
 /**

@@ -244,6 +244,23 @@ static NSWindow *newTabWindow = nil;
 
 /* GSWindowTabbable: how the tab group moves its windows. */
 
+- (void) _tabbingReplace: (id)previous
+                   frame: (NSRect)frame
+               maximized: (BOOL)maximized
+                 makeKey: (BOOL)makeKey
+{
+  [[GSTheme theme] showTabbedWindow: self
+                    inPlaceOfWindow: previous
+                              frame: frame
+                          maximized: maximized
+                            makeKey: makeKey];
+}
+
+- (BOOL) _tabbingShowsBarAlone
+{
+  return [[GSTheme theme] windowTabBarShowsSingleTabForWindow: self];
+}
+
 - (BOOL) _tabbingIsMaximized
 {
   BOOL known;
@@ -378,6 +395,18 @@ static NSWindow *newTabWindow = nil;
     }
   GSWindowTabbingStateForWindow(self, YES)->shown = YES;
   [self _tabbingNoteNormalFrame];
+  /* Alone, with a theme that shows the bar for one tab: the group builds
+     a window's bar only as the group changes. */
+  if ([self _tabbingShowsBarAlone])
+    {
+      NSWindowTabGroup *group = [self tabGroup];
+
+      if ([[group windows] count] == 1 && [group isTabBarVisible]
+        && [self _tabBarView] == nil)
+        {
+          [self _updateTabBar];
+        }
+    }
   return NO;
 }
 

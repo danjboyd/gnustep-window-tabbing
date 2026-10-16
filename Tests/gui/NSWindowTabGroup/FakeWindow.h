@@ -25,6 +25,10 @@
   NSString *identifier;
   NSWindowTabGroup *group;
   int changes;
+  /* Whether its theme shows the bar for it alone. */
+  BOOL alone;
+  /* Shows and hides, in order, when set. */
+  NSMutableArray *events;
 }
 + (FakeWindow *) named: (NSString *)name;
 - (BOOL) isVisible;
@@ -71,7 +75,25 @@
 {
   visible = NO;
   key = NO;
+  if (events != nil)
+    {
+      [events addObject: [NSString stringWithFormat: @"hide %@", name]];
+    }
 }
+- (void) _tabbingReplace: (id)previous
+                   frame: (NSRect)f
+               maximized: (BOOL)m
+                 makeKey: (BOOL)makeKey
+{
+  /* As the default theme does it. */
+  [self _tabbingShowWithFrame: f maximized: m makeKey: makeKey inPlaceOf: previous];
+  if (events != nil)
+    {
+      [events addObject: [NSString stringWithFormat: @"show %@", name]];
+    }
+  [previous _tabbingHide];
+}
+- (BOOL) _tabbingShowsBarAlone { return alone; }
 - (void) _tabbingGroupDidChange { changes++; }
 - (NSWindowTabGroup *) _tabbingGroup { return group; }
 - (void) _setTabbingGroup: (NSWindowTabGroup *)g { ASSIGN (group, g); }

@@ -236,7 +236,7 @@ main (int argc, char **argv)
         GSWindowTabBarView *bar = (GSWindowTabBarView *)GSWindowTabBarViewForWindow (a);
         NSRect tab = [bar convertRect: [bar rectForTabAtIndex: 2] toView: nil];
         NSPoint start = NSMakePoint (NSMidX (tab) - 20.0, NSMidY (tab));
-        NSPoint far = [a convertScreenToBase: fromTab (a, 2, -2.0 * step, 0.0)];
+        NSPoint away = [a convertScreenToBase: fromTab (a, 2, -2.0 * step, 0.0)];
         NSEvent *left;
 
         while ([NSApp nextEventMatchingMask: NSAnyEventMask untilDate: [NSDate distantPast]
@@ -244,9 +244,9 @@ main (int argc, char **argv)
           {
           }
         [NSApp postEvent: mouse (NSLeftMouseDragged, a, NSMakePoint (start.x - 20.0, start.y)) atStart: NO];
-        [NSApp postEvent: mouse (NSLeftMouseDragged, a, far) atStart: NO];
-        [NSApp postEvent: mouse (NSMouseMoved, a, far) atStart: NO];
-        [NSApp postEvent: mouse (NSLeftMouseUp, a, far) atStart: NO];
+        [NSApp postEvent: mouse (NSLeftMouseDragged, a, away) atStart: NO];
+        [NSApp postEvent: mouse (NSMouseMoved, a, away) atStart: NO];
+        [NSApp postEvent: mouse (NSLeftMouseUp, a, away) atStart: NO];
         [bar mouseDown: mouse (NSLeftMouseDown, a, start)];
         left = [NSApp nextEventMatchingMask: NSAnyEventMask untilDate: [NSDate distantPast]
                                      inMode: NSEventTrackingRunLoopMode dequeue: YES];
@@ -421,7 +421,7 @@ main (int argc, char **argv)
       PASS ([bar scrollOffset] < offset, "the wheel scrolls the tabs");
       PASS (fabs ((offset - [bar scrollOffset])
                   - MIN (offset, pow (NSWidth (tabs), 2.0 / 3.0))) < 0.5,
-            "one notch as far as GTK's: the visible width to the power 2/3");
+            "one notch as away as GTK's: the visible width to the power 2/3");
       [bar scrollWheel: wheel ([bar window], [bar convertPoint: NSMakePoint (NSMidX (tabs), 10.0) toView: nil], 100.0)];
       PASS ([bar scrollOffset] == 0.0, "but no further than the first tab");
       [bar scrollWheel: wheel ([bar window], [bar convertPoint: NSMakePoint (NSMidX (tabs), 10.0) toView: nil], -1.0)];
