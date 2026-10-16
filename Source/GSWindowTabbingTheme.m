@@ -300,6 +300,27 @@ GSWindowTabDrawTitle(NSString *title, NSRect rect, GSWindowTabState state)
   RELEASE(gradient);
 }
 
+- (BOOL) windowTabBarShowsSingleTabForWindow: (NSWindow *)window
+{
+  return NO;
+}
+
+/* The new tab on screen before the old one goes: hidden first, the old
+   left the screen empty for a moment and the window seemed to vanish
+   (seen in the WinUI theme, whose windows are separate on Windows). */
+- (void) showTabbedWindow: (NSWindow *)window
+          inPlaceOfWindow: (NSWindow *)previous
+                    frame: (NSRect)frame
+                maximized: (BOOL)maximized
+                  makeKey: (BOOL)makeKey
+{
+  [(id)window _tabbingShowWithFrame: frame
+                          maximized: maximized
+                            makeKey: makeKey
+                          inPlaceOf: previous];
+  [(id)previous _tabbingHide];
+}
+
 @end
 
 #endif /* GS_HAS_WINDOW_TABBING */
