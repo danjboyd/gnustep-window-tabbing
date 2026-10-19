@@ -316,6 +316,8 @@ GSTabGroupWindowAt(NSArray *windows, NSUInteger index)
   frame = [previous frame];
   maximized = [previous _tabbingIsMaximized];
   key = [previous isKeyWindow];
+  /* The theme's -showTabbedWindow:inPlaceOfWindow:..., whose default
+     shows the new tab before hiding the old one (#3). */
   [window _tabbingReplace: previous
                     frame: frame
                 maximized: maximized

@@ -1,3 +1,13 @@
+2026-10-16  Daniel Boyd  <danieljboyd@icloud.com>
+
+	* Source/NSWindowTabGroup.m ([NSWindowTabGroup -_switchToWindow:]):
+	Show the new tab's window before hiding the old one.  Hidden first,
+	no window of the group was on screen for a moment and the window
+	manager animated both: the window vanished and reappeared (#3).
+	* Tests/gui/NSWindowTabGroup/FakeWindow.h (fakeLog): New: the shows
+	and hides the group asks for, in order.
+	* Tests/gui/NSWindowTabGroup/group.m: Test the order.
+
 2026-10-08  Daniel Boyd  <danieljboyd@icloud.com>
 
 	* Source/GSWindowTabbingPrivate.h (GSWindowTabbable): Replace

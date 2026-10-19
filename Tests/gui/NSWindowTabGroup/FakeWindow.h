@@ -12,6 +12,19 @@
 #import <Foundation/Foundation.h>
 #import "GSWindowTabbingPrivate.h"
 
+/* What the group asked of the stand-ins, in order: "show A", "hide B". */
+static NSMutableArray *fakeLog = nil;
+
+static void
+fakeLogAdd (NSString *what, NSString *name)
+{
+  if (fakeLog == nil)
+    {
+      fakeLog = [NSMutableArray new];
+    }
+  [fakeLog addObject: [NSString stringWithFormat: @"%@ %@", what, name]];
+}
+
 @interface FakeWindow : NSObject <GSWindowTabbable>
 {
 @public
@@ -27,8 +40,6 @@
   int changes;
   /* Whether its theme shows the bar for it alone. */
   BOOL alone;
-  /* Shows and hides, in order, when set. */
-  NSMutableArray *events;
 }
 + (FakeWindow *) named: (NSString *)name;
 - (BOOL) isVisible;
@@ -70,15 +81,13 @@
   maximized = m;
   visible = YES;
   key = makeKey;
+  fakeLogAdd (@"show", name);
 }
 - (void) _tabbingHide
 {
+  fakeLogAdd (@"hide", name);
   visible = NO;
   key = NO;
-  if (events != nil)
-    {
-      [events addObject: [NSString stringWithFormat: @"hide %@", name]];
-    }
 }
 - (void) _tabbingReplace: (id)previous
                    frame: (NSRect)f
@@ -87,10 +96,6 @@
 {
   /* As the default theme does it. */
   [self _tabbingShowWithFrame: f maximized: m makeKey: makeKey inPlaceOf: previous];
-  if (events != nil)
-    {
-      [events addObject: [NSString stringWithFormat: @"show %@", name]];
-    }
   [previous _tabbingHide];
 }
 - (BOOL) _tabbingShowsBarAlone { return alone; }
