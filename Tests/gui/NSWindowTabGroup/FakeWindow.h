@@ -38,6 +38,8 @@ fakeLogAdd (NSString *what, NSString *name)
   NSString *identifier;
   NSWindowTabGroup *group;
   int changes;
+  /* Whether its theme shows the bar for it alone. */
+  BOOL alone;
 }
 + (FakeWindow *) named: (NSString *)name;
 - (BOOL) isVisible;
@@ -87,6 +89,16 @@ fakeLogAdd (NSString *what, NSString *name)
   visible = NO;
   key = NO;
 }
+- (void) _tabbingReplace: (id)previous
+                   frame: (NSRect)f
+               maximized: (BOOL)m
+                 makeKey: (BOOL)makeKey
+{
+  /* As the default theme does it. */
+  [self _tabbingShowWithFrame: f maximized: m makeKey: makeKey inPlaceOf: previous];
+  [previous _tabbingHide];
+}
+- (BOOL) _tabbingShowsBarAlone { return alone; }
 - (void) _tabbingGroupDidChange { changes++; }
 - (NSWindowTabGroup *) _tabbingGroup { return group; }
 - (void) _setTabbingGroup: (NSWindowTabGroup *)g { ASSIGN (group, g); }

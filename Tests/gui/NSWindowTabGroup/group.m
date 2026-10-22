@@ -79,6 +79,28 @@ main (int argc, char **argv)
     }
   END_SET ("membership and selection")
 
+  START_SET ("a window alone whose theme shows the bar")
+    {
+      FakeWindow *a = [FakeWindow named: @"A"];
+      FakeWindow *b = [FakeWindow named: @"B"];
+      NSWindowTabGroup *group;
+
+      a->alone = YES;
+      b->alone = YES;
+      group = groupWith (a);
+      PASS ([group isTabBarVisible],
+            "a theme that shows the bar for one tab: one window shows it");
+      [group _toggleTabBar];
+      PASS ([group isTabBarVisible] == NO, "Hide Tab Bar hides it");
+      [group _toggleTabBar];
+      PASS ([group isTabBarVisible], "and Show Tab Bar brings it back");
+      [group addWindow: (NSWindow *)b];
+      [group removeWindow: (NSWindow *)b];
+      PASS ([[group windows] count] == 1 && [group isTabBarVisible],
+            "back to one tab, the bar stays");
+    }
+  END_SET ("a window alone whose theme shows the bar")
+
   START_SET ("ordering")
     {
       FakeWindow *a = [FakeWindow named: @"A"];

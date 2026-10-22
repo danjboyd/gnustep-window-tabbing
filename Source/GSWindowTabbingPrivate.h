@@ -60,6 +60,18 @@
                      inPlaceOf: (id)previous;
 /* Takes it off screen while it stays in its group. */
 - (void) _tabbingHide;
+/* Becomes the group's selected window in place of previous: on screen at
+   frame (maximized or not, key if makeKey), and previous off it.  The
+   theme decides how (-showTabbedWindow:inPlaceOfWindow:...): by default
+   this window comes on screen before previous goes, so the window never
+   seems to vanish. */
+- (void) _tabbingReplace: (id)previous
+                   frame: (NSRect)frame
+               maximized: (BOOL)maximized
+                 makeKey: (BOOL)makeKey;
+/* Whether the window, alone in its group, shows the tab bar while the
+   bar is automatic (-windowTabBarShowsSingleTabForWindow:). */
+- (BOOL) _tabbingShowsBarAlone;
 /* The group's windows, selection or bar changed: redraw the bar and
    reserve or release its row. */
 - (void) _tabbingGroupDidChange;
